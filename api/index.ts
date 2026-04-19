@@ -127,6 +127,14 @@ app.get('/api/kpi-historico/:kpi_id', async (req, res) => {
     const { kpi_id } = req.params;
     const { anio } = req.query;
 
+    // 1. Obtener Metadatos del KPI
+    const { data: meta, error: metaErr } = await supabase
+      .from('v_kpis_detalle')
+      .select('kpi_nombre, area_nombre, meta_descripcion, formula_descripcion, formula_tipo, semaforo_verde_min, semaforo_amarillo_min')
+      .eq('kpi_id', kpi_id)
+      .single();
+
+    // 2. Obtener Historial de Resultados con Comentarios de la Captura
     let query = supabase
       .from('kpi_resultados')
       .select(`
@@ -134,7 +142,8 @@ app.get('/api/kpi-historico/:kpi_id', async (req, res) => {
         valor_auxiliar,
         unidad_resultado,
         semaforo,
-        periodos!inner(anio, mes, nombre)
+        periodos!inner(anio, mes, nombre),
+        kpi_capturas(comentario)
       `)
       .eq('kpi_id', kpi_id);
 
@@ -145,17 +154,21 @@ app.get('/api/kpi-historico/:kpi_id', async (req, res) => {
     const { data, error } = await query;
     if (error) throw error;
 
-    // Ordenar por mes histórico
     const historico = data?.map(d => ({
       mes: d.periodos.mes,
       mes_nombre: d.periodos.nombre,
       valor: d.valor_resultado,
       valor_auxiliar: d.valor_auxiliar,
       unidad: d.unidad_resultado,
-      semaforo: d.semaforo
+      semaforo: d.semaforo,
+      comentario: d.kpi_capturas?.comentario || null
     })).sort((a, b) => a.mes - b.mes) || [];
 
-    res.json({ success: true, data: historico });
+    res.json({ 
+      success: true, 
+      meta, 
+      data: historico 
+    });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });
   }

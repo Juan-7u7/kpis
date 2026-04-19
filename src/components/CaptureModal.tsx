@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, FileText, CheckCircle, Clock } from 'lucide-react';
+import { X, Save, FileText, CheckCircle, Clock, HelpCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface CaptureModalProps {
@@ -102,7 +102,18 @@ export default function CaptureModal({ kpi_id, anio, mes, onClose, onSuccess }: 
       <div className="modal-content">
         <button className="modal-close" onClick={onClose}><X size={24} /></button>
         <h2>Capturar: {config.kpi_nombre}</h2>
-        <p className="modal-subtitle">{config.meta_descripcion}</p>
+        
+        <div style={{ background: 'rgba(59, 130, 246, 0.05)', borderLeft: '4px solid var(--accent-color)', padding: '1rem', borderRadius: '4px 8px 8px 4px', marginBottom: '1.5rem', marginTop: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent-color)', fontWeight: 700, marginBottom: '6px', fontSize: '0.85rem' }}>
+            <HelpCircle size={16} /> GUÍA DE MEDICIÓN
+          </div>
+          <p style={{ fontSize: '0.9rem', color: 'var(--text-main)', lineHeight: '1.4', margin: 0 }}>
+             <b>Meta:</b> {config.meta_descripcion}
+          </p>
+          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontStyle: 'italic', marginTop: '8px' }}>
+             <b>Cómo llenar:</b> {config.formula_descripcion || 'Ingresa los datos solicitados según las operaciones realizadas en el mes.'}
+          </p>
+        </div>
 
         <form onSubmit={handleSubmit} className="capture-form">
           {config.tipo_captura === 'binario_documental' && (

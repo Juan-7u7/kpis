@@ -247,6 +247,18 @@ function App() {
                 >
                   <div className="kpi-card-header">
                     <span className="kpi-formula-type">{kpi.formula_tipo.replace(/[_]/g, ' ').toUpperCase()}</span>
+                    <button 
+                      className="kpi-info-icon" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // Abrimos el modal detallado que ya tiene la lógica de ayuda
+                        setKpiForHistory(kpi);
+                      }}
+                      title="Haz clic para ver la lógica de medición"
+                      style={{ background: 'none', border: 'none', padding: '4px', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center' }}
+                    >
+                      <HelpCircle size={14} />
+                    </button>
                   </div>
                   <h3 className="kpi-name">{kpi.kpi_nombre}</h3>
                   
@@ -257,42 +269,53 @@ function App() {
                   </div>
 
                   <div className="kpi-card-footer" style={{ marginTop: 'auto', paddingTop: '1.5rem', width: '100%' }}>
-                    {kpi.valor !== null && kpi.tipo_resultado === 'porcentaje' ? (
+                    {/* Caso: Gráfica Circular (Para Porcentajes y Binarios) */}
+                    {(kpi.tipo_resultado === 'porcentaje' || kpi.tipo_resultado === 'binario') ? (
                       <div className="kpi-donut-container">
                         <div className="radial-progress-wrapper">
-                          <div className="radial-progress" style={{ '--progress': kpi.valor } as React.CSSProperties}>
+                          <div 
+                            className="radial-progress" 
+                            style={{ 
+                              '--progress': kpi.valor === null ? 0 : (kpi.tipo_resultado === 'binario' ? (kpi.valor > 0 ? 100 : 0) : kpi.valor) 
+                            } as React.CSSProperties}
+                          >
                             <div className="radial-progress-inner">
-                              {kpi.valor}%
+                              {kpi.valor !== null ? (kpi.tipo_resultado === 'binario' ? (kpi.valor > 0 ? '100%' : '0%') : `${kpi.valor}%`) : '--'}
                             </div>
                           </div>
                           <div>
-                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600, marginBottom: '4px' }}>CUMPLIMIENTO</div>
-                            <div className="kpi-status" title="Estado visual del KPI">
+                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600, marginBottom: '4px' }}>
+                              {kpi.tipo_resultado === 'binario' ? 'CUMPLIMIENTO' : 'PROGRESO'}
+                            </div>
+                            <div className="kpi-status">
                               <span className="status-dot"></span>
-                              {kpi.semaforo.charAt(0).toUpperCase() + kpi.semaforo.slice(1)}
+                              {kpi.semaforo === 'gris' ? 'Pendiente' : kpi.semaforo.charAt(0).toUpperCase() + kpi.semaforo.slice(1)}
                             </div>
                           </div>
                         </div>
                       </div>
                     ) : (
+                      /* Caso: Gráfica Lineal (Para Conteo, Montos, Promedios) */
                       <div style={{ width: '100%' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
                           <div className="kpi-result">
                             <span className="kpi-value">{kpi.valor !== null ? kpi.valor : '--'}</span>
                             {kpi.valor !== null && <span className="kpi-unit" style={{ marginLeft: '4px' }}>{kpi.unidad}</span>}
                           </div>
-                          <div className="kpi-status" title={kpi.valor === null ? "Necesita captura este mes" : "Estado visual del KPI"}>
+                          <div className="kpi-status">
                             <span className="status-dot"></span>
                             {kpi.semaforo === 'gris' ? 'Pendiente' : kpi.semaforo.charAt(0).toUpperCase() + kpi.semaforo.slice(1)}
                           </div>
                         </div>
-                        {kpi.valor !== null && (
-                          <div className="linear-progress-container" title="Progreso cualitativo">
-                            <div className="linear-progress-bar" style={{ 
-                               width: kpi.semaforo === 'verde' ? '100%' : (kpi.semaforo === 'amarillo' ? '65%' : '25%') 
-                            }}></div>
-                          </div>
-                        )}
+                        <div className="linear-progress-container" title="Progreso relativo">
+                          <div 
+                            className="linear-progress-bar" 
+                            style={{ 
+                              width: kpi.valor === null ? '0%' : (kpi.semaforo === 'verde' ? '100%' : (kpi.semaforo === 'amarillo' ? '65%' : '35%')),
+                              opacity: kpi.valor === null ? 0.3 : 1
+                            }}
+                          ></div>
+                        </div>
                       </div>
                     )}
                   </div>

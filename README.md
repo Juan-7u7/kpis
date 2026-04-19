@@ -1,73 +1,80 @@
-# React + TypeScript + Vite
+# 📊 Sistema de Gestión de KPIs (Key Performance Indicators)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Este es un software empresarial diseñado para la captura, procesamiento y visualización de indicadores clave de desempeño (KPIs), basado en un modelo funcional de Excel para la gestión de mantenimiento, seguridad y cumplimiento.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 🛠️ Stack Tecnológico
 
-## React Compiler
+- **Frontend:** React 19 + TypeScript + Vite.
+- **Backend:** Node.js (Express) para cálculos automatizados y proxy de API.
+- **Base de Datos:** Supabase (PostgreSQL) para datos relacionales y tiempo real.
+- **Estilos:** CSS Vanilla (Custom Properties) con enfoque en UX premium.
+- **Librerías Clave:** 
+  - `driver.js` (Tutorial intermedio).
+  - `lucide-react` (Iconografía).
+  - `react-hot-toast` (Notificaciones).
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the ESLint configuration
+## 🏗️ Arquitectura del Sistema
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+El sistema sigue una arquitectura de desacoplamiento entre captura y resultado:
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+1.  **Capa de Captura:** Los usuarios ingresan datos granulares (fechas, booleanos, conteos).
+2.  **Capa de Procesamiento (Backend/API):** El servidor recibe la captura, identifica el tipo de fórmula y realiza el cálculo matemático. Asigna el color del semáforo basado en las metas configuradas.
+3.  **Capa de Persistencia:** Se guardan tanto los datos originales (bitácora) como el resultado final calculado.
+4.  **Capa de Visualización:** El frontend renderiza gráficas dinámicas (Donas, Barras 3D, Barras Horizontales) basadas en el tipo de dato.
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+---
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## 📈 Tipos de Indicadores y Lógica
+
+| Tipo | KPI Ejemplo | Lógica de Cálculo |
+| :--- | :--- | :--- |
+| **Binario Documental** | Análisis de Mantto. | 2 documentos (100%), 1 documento (50%), 0 (0%). |
+| **Conteo** | Simulacros/Juntas | `(Cumplidos / Programados) * 100`. |
+| **Conteo Operativo** | Checklist Op. | `(Correctos / Total Operaciones) * 100`. |
+| **Tiempos (Fechas)** | Entrega Info. | Días entre solicitud y entrega. ≤ 2 días = 100% de cumplimiento por evento. |
+| **Sí/No** | Reportes HGE | Sí = 100%, No = 0%. |
+
+---
+
+## 🚥 Reglas del Semáforo
+
+El sistema aplica colores automáticamente según el resultado porcentual:
+- 🟢 **Verde (Óptimo):** ≥ 100% (o meta configurada).
+- 🟡 **Amarillo (Alerta):** 80% - 99%.
+- 🔴 **Rojo (Riesgo):** < 80%.
+
+---
+
+## 📂 Estructura del Proyecto
+
+```text
+├── api/                # Backend (Vercel Serverless Functions)
+│   └── index.ts        # Motor de cálculos y endpoints
+├── src/                # Frontend
+│   ├── components/     # Componentes (Modales, Cards, App)
+│   ├── lib/            # Configuración Supabase
+│   └── index.css       # Sistema de diseño y animaciones
+├── reglas/             # Documentación funcional y lógica de negocio
+├── bd.sql              # Estructura completa de la base de datos
+└── seed.sql            # Datos iniciales y configuración de KPIs
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+---
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## 🚀 Instalación y Desarrollo
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+1.  **Clonar:** `git clone https://github.com/Juan-7u7/kpis.git`
+2.  **Dependencias:** `npm install`
+3.  **Variables de Env:** Configurar `.env` con las claves de Supabase.
+4.  **Ejecutar:** 
+    - Frontend: `npm run dev`
+    - Backend Local: `npm run dev:backend`
+
+---
+
+## 👤 Autor
+Proyecto diseñado para la optimización de métricas operativas por **Antigravity AI**.
