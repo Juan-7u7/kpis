@@ -6,8 +6,25 @@ import 'driver.js/dist/driver.css';
 import CaptureModal from './components/CaptureModal';
 import KpiDetailModal from './components/KpiDetailModal';
 
+interface KPI {
+  id: string;
+  kpi_id: string;
+  resultado_id: string | null;
+  kpi_nombre: string;
+  area: string;
+  valor: number | null;
+  semaforo: string;
+  unidad: string;
+  formula_tipo: string;
+  tipo_resultado: string;
+}
+
+interface KpiGroup {
+  [area: string]: KPI[];
+}
+
 function App() {
-  const [kpis, setKpis] = useState<any[]>([]);
+  const [kpis, setKpis] = useState<KPI[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -18,12 +35,12 @@ function App() {
   const [searchQuery, setSearchQuery] = useState('');
 
   // Modals
-  const [captureKpi, setCaptureKpi] = useState<any | null>(null);
-  const [kpiForHistory, setKpiForHistory] = useState<any | null>(null);
+  const [captureKpi, setCaptureKpi] = useState<KPI | null>(null);
+  const [kpiForHistory, setKpiForHistory] = useState<KPI | null>(null);
 
-  const fetchKPIs = async () => {
+  const fetchKPIs = React.useCallback(async () => {
+    setLoading(true);
     try {
-      setLoading(true);
       const res = await fetch(`/api/kpis?anio=${selectedYear}&mes=${selectedMonth}`);
       if (!res.ok) throw new Error('Error al conectar con la API');
       const data = await res.json();
@@ -32,16 +49,18 @@ function App() {
       } else {
         throw new Error(data.error);
       }
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedYear, selectedMonth]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchKPIs();
-  }, [selectedYear, selectedMonth]);
+  }, [fetchKPIs]);
 
   const getSemaforoColor = (semaforo: string) => {
     switch (semaforo?.toLowerCase()) {
@@ -68,7 +87,7 @@ function App() {
     return matchArea && matchSearch;
   });
 
-  const groupedKpis = filteredKpis.reduce((acc: any, kpi: any) => {
+  const groupedKpis = filteredKpis.reduce((acc: KpiGroup, kpi: KPI) => {
     if (!acc[kpi.area]) acc[kpi.area] = [];
     acc[kpi.area].push(kpi);
     return acc;
@@ -235,9 +254,9 @@ function App() {
           <section key={area} className="area-section">
             <h2 className="area-title">{area}</h2>
             <div className="kpi-grid">
-              {groupedKpis[area].map((kpi: any) => (
+              {groupedKpis[area].map((kpi: KPI) => (
                 <div 
-                  key={kpi.resultado_id} 
+                  key={kpi.resultado_id || kpi.kpi_id} 
                   className="kpi-card hover-enabled"
                   style={{ 
                     '--card-color': getSemaforoColor(kpi.semaforo), 

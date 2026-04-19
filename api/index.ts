@@ -66,10 +66,29 @@ app.get('/api/kpis', async (req, res) => {
 
     if (resultsError) throw resultsError;
 
+    interface KPIBase {
+      id: string;
+      nombre: string;
+      formula_tipo: string;
+      tipo_resultado: string;
+      orden_visual: number;
+      areas: { id: string, nombre: string } | null;
+    }
+
+    interface KPIResultRecord {
+      id: string;
+      kpi_id: string;
+      valor_resultado: number;
+      valor_auxiliar: number | null;
+      unidad_resultado: string;
+      semaforo: string;
+      periodos: { anio: number, mes: number, nombre: string };
+    }
+
     // 3. Crear el array consolidando los KPIs capturados y los pendientes
-    const kpisLimpios = kpisData?.map((kpi: any) => {
+    const kpisLimpios = (kpisData as unknown as KPIBase[])?.map((kpi) => {
       // Find matching result for this KPI
-      const r = resultsData?.find((res: any) => res.kpi_id === kpi.id);
+      const r = (resultsData as unknown as KPIResultRecord[])?.find((res) => res.kpi_id === kpi.id);
       return {
         kpi_id: kpi.id,
         resultado_id: r ? r.id : null,
@@ -116,8 +135,9 @@ app.get('/api/kpi-config/:kpi_id', async (req, res) => {
 
     if (error) throw error;
     res.json({ success: true, data });
-  } catch (err: any) {
-    res.status(500).json({ success: false, error: err.message });
+  } catch (err: unknown) {
+    const error = err as Error;
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
@@ -133,6 +153,8 @@ app.get('/api/kpi-historico/:kpi_id', async (req, res) => {
       .select('kpi_nombre, area_nombre, meta_descripcion, formula_descripcion, formula_tipo, semaforo_verde_min, semaforo_amarillo_min')
       .eq('kpi_id', kpi_id)
       .single();
+
+    if (metaErr) throw metaErr;
 
     // 2. Obtener Historial de Resultados con Comentarios de la Captura
     let query = supabase
@@ -154,23 +176,33 @@ app.get('/api/kpi-historico/:kpi_id', async (req, res) => {
     const { data, error } = await query;
     if (error) throw error;
 
-    const historico = data?.map(d => ({
-      mes: d.periodos.mes,
-      mes_nombre: d.periodos.nombre,
-      valor: d.valor_resultado,
-      valor_auxiliar: d.valor_auxiliar,
-      unidad: d.unidad_resultado,
-      semaforo: d.semaforo,
-      comentario: d.kpi_capturas?.comentario || null
-    })).sort((a, b) => a.mes - b.mes) || [];
+    const historico = data?.map(d => {
+      interface PeriodoJoin { mes: number; nombre: string; }
+      interface CapturaJoin { comentario: string; }
+
+      // Supabase dynamic joins can return arrays even for 1-to-1 relations in TS definitions
+      const p = (Array.isArray(d.periodos) ? d.periodos[0] : d.periodos) as unknown as PeriodoJoin;
+      const c = (Array.isArray(d.kpi_capturas) ? d.kpi_capturas[0] : d.kpi_capturas) as unknown as CapturaJoin;
+      
+      return {
+        mes: p?.mes,
+        mes_nombre: p?.nombre,
+        valor: d.valor_resultado,
+        valor_auxiliar: d.valor_auxiliar,
+        unidad: d.unidad_resultado,
+        semaforo: d.semaforo,
+        comentario: c?.comentario || null
+      };
+    }).sort((a, b) => (a.mes || 0) - (b.mes || 0)) || [];
 
     res.json({ 
       success: true, 
       meta, 
       data: historico 
     });
-  } catch (err: any) {
-    res.status(500).json({ success: false, error: err.message });
+  } catch (err: unknown) {
+    const error = err as Error;
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
@@ -250,30 +282,30 @@ app.post('/api/capturas', async (req, res) => {
       const f_tipo = configKpi.formula_tipo;
 
       if (f_tipo === 'si_no') {
-        const compl = detalles[0]?.valor === true;
+        const compl = (detalles as {valor: boolean}[])[0]?.valor === true;
         valor_resultado = compl ? 100 : 0;
       } else if (f_tipo === 'documental_doble') {
-        const trues = detalles.filter((d: any) => d.valor === true).length;
+        const trues = (detalles as {valor: boolean}[]).filter((d) => d.valor === true).length;
         if (trues === 2) valor_resultado = 100;
         else if (trues === 1) valor_resultado = 50;
         else valor_resultado = 0;
       } else if (f_tipo === 'cumplidos_programados') {
-        const p = detalles.programados || 0;
-        const c = detalles.cumplidos || 0;
+        const p = (detalles as {programados: number}).programados || 0;
+        const c = (detalles as {cumplidos: number}).cumplidos || 0;
         if (p === 0) seCalcula = false;
         else valor_resultado = (c / p) * 100;
       } else if (f_tipo === 'correctos_total') {
-        const t = detalles.total_operaciones || 0;
-        const c = detalles.operaciones_correctas || 0;
+        const t = (detalles as {total_operaciones: number}).total_operaciones || 0;
+        const c = (detalles as {operaciones_correctas: number}).operaciones_correctas || 0;
         if (t === 0) seCalcula = false;
         else valor_resultado = (c / t) * 100;
       } else if (f_tipo === 'entregas_a_tiempo') {
-        const entregas = Array.isArray(detalles) ? detalles : (detalles.entregas || []);
+        const entregas = (Array.isArray(detalles) ? detalles : ((detalles as {entregas: {solicitud: string, entrega: string}[]}).entregas || []));
         if (entregas.length === 0) seCalcula = false;
         else {
           let aTiempo = 0;
           let sumDias = 0;
-          entregas.forEach((ent: any) => {
+          entregas.forEach((ent: {solicitud: string, entrega: string}) => {
             const f1 = new Date(ent.solicitud);
             const f2 = new Date(ent.entrega);
             const dias = Math.max(0, Math.ceil((f2.getTime() - f1.getTime()) / (1000 * 60 * 60 * 24)));
@@ -314,9 +346,10 @@ app.post('/api/capturas', async (req, res) => {
     }
 
     res.json({ success: true, message: 'Captura guardada y calculada correctamente' });
-  } catch (err: any) {
-    console.error('Error capturando KPI:', err);
-    res.status(500).json({ success: false, error: err.message });
+  } catch (err: unknown) {
+    const error = err as Error;
+    console.error('Error capturando KPI:', error);
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 

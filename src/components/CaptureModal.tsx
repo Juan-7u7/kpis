@@ -10,55 +10,83 @@ interface CaptureModalProps {
   onSuccess: () => void;
 }
 
+interface KpiConfig {
+  kpi_id: string;
+  kpi_nombre: string;
+  meta_descripcion: string;
+  formula_tipo: string;
+  formula_descripcion: string;
+  tipo_captura: string;
+  config_json?: {
+    guia?: string;
+    campos?: string[];
+  };
+}
+
+interface KpiFormData {
+  programados?: number;
+  cumplidos?: number;
+  total_operaciones?: number;
+  operaciones_correctas?: number;
+  entregas?: Array<{
+    solicitud: string;
+    entrega: string;
+    dias: number;
+    cumplio: boolean;
+  }>;
+  [key: string]: string | number | boolean | object | undefined;
+}
+
 export default function CaptureModal({ kpi_id, anio, mes, onClose, onSuccess }: CaptureModalProps) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [config, setConfig] = useState<any>(null);
+  const [config, setConfig] = useState<KpiConfig | null>(null);
   
-  // State for forms
-  const [formData, setFormData] = useState<any>({});
-
+  const [formData, setFormData] = useState<KpiFormData>({});
   const [comentario, setComentario] = useState('');
 
   useEffect(() => {
+    const fetchConfig = async () => {
+      try {
+        const res = await fetch(`/api/kpi-config/${kpi_id}`);
+        const data = await res.json();
+        if (data.success) {
+          const cnf = data.data as KpiConfig;
+          setConfig(cnf);
+          
+          // Local initialization of form state
+          const initData: KpiFormData = {};
+          if (cnf.tipo_captura === 'binario_documental') {
+            const campos = cnf.config_json?.campos || ['confirmacion_documental'];
+            campos.forEach((c: string) => initData[c] = false);
+          } else if (cnf.tipo_captura === 'conteo') {
+            initData.programados = 0;
+            initData.cumplidos = 0;
+          } else if (cnf.tipo_captura === 'conteo_operativo') {
+            initData.total_operaciones = 0;
+            initData.operaciones_correctas = 0;
+          } else if (cnf.tipo_captura === 'fechas') {
+            initData.entregas = [];
+          }
+          setFormData(initData);
+          setComentario('');
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchConfig();
   }, [kpi_id]);
 
-  const fetchConfig = async () => {
-    try {
-      const res = await fetch(`/api/kpi-config/${kpi_id}`);
-      const data = await res.json();
-      if (data.success) {
-        setConfig(data.data);
-        initFormState(data.data);
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const initFormState = (cnf: any) => {
-    if (cnf.tipo_captura === 'binario_documental') {
-      const campos = cnf.config_json?.campos || ['confirmacion_documental'];
-      const initData: any = {};
-      campos.forEach((c: string) => initData[c] = false);
-      setFormData(initData);
-    } else if (cnf.tipo_captura === 'conteo') {
-      setFormData({ programados: 0, cumplidos: 0 });
-    } else if (cnf.tipo_captura === 'conteo_operativo') {
-      setFormData({ total_operaciones: 0, operaciones_correctas: 0 });
-    } else if (cnf.tipo_captura === 'fechas') {
-      setFormData({ entregas: [] }); // array de entregas
-    }
-    setComentario('');
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!config) return;
+    
     setSaving(true);
-    let detalles: any = null;
+    let detalles: object | null = null;
 
     if (config.tipo_captura === 'binario_documental') {
       detalles = Object.keys(formData).map(k => ({ campo: k, valor: formData[k] }));
@@ -131,7 +159,7 @@ export default function CaptureModal({ kpi_id, anio, mes, onClose, onSuccess }: 
                   <input 
                     type="checkbox" 
                     id={campo}
-                    checked={formData[campo] || false}
+                    checked={!!formData[campo]}
                     onChange={(e) => setFormData({...formData, [campo]: e.target.checked})}
                   />
                   <label htmlFor={campo}>Confirmar: {campo.replace(/_/g, ' ').toUpperCase()}</label>
@@ -192,18 +220,18 @@ export default function CaptureModal({ kpi_id, anio, mes, onClose, onSuccess }: 
                    dias: 0, cumplio: true
                  }]})
                }}>+ Registrar Nueva Entrega</button>
-               {formData.entregas?.map((ent: any, i: number) => (
+               {formData.entregas?.map((ent, i: number) => (
                  <div key={i} className="form-row" style={{marginBottom: '0.5rem', background: '#f8fafc', padding:'10px', borderRadius:'8px', border: '1px solid rgba(0,0,0,0.1)'}}>
                    <div style={{flex: 1}}>
                      <span style={{fontSize:'0.75rem', color:'var(--text-muted)', display:'block', marginBottom:'4px', fontWeight:600}}>Solicitado</span>
                      <input type="date" style={{width:'100%', padding:'0.5rem', borderRadius:'6px', border:'1px solid rgba(0,0,0,0.15)', background:'white', color:'var(--text-main)', outline:'none'}} value={ent.solicitud} onChange={(e) => {
-                       const a = [...formData.entregas]; a[i].solicitud = e.target.value; setFormData({...formData, entregas: a});
+                       const a = [...(formData.entregas || [])]; a[i].solicitud = e.target.value; setFormData({...formData, entregas: a});
                      }} />
                    </div>
                    <div style={{flex: 1}}>
                      <span style={{fontSize:'0.75rem', color:'var(--text-muted)', display:'block', marginBottom:'4px', fontWeight:600}}>Entregado</span>
                      <input type="date" style={{width:'100%', padding:'0.5rem', borderRadius:'6px', border:'1px solid rgba(0,0,0,0.15)', background:'white', color:'var(--text-main)', outline:'none'}} value={ent.entrega} onChange={(e) => {
-                       const a = [...formData.entregas]; a[i].entrega = e.target.value; setFormData({...formData, entregas: a});
+                       const a = [...(formData.entregas || [])]; a[i].entrega = e.target.value; setFormData({...formData, entregas: a});
                      }} />
                    </div>
                  </div>

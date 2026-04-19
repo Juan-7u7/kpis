@@ -1,80 +1,95 @@
 # 📊 Sistema de Gestión de KPIs (Key Performance Indicators)
 
-Este es un software empresarial diseñado para la captura, procesamiento y visualización de indicadores clave de desempeño (KPIs), basado en un modelo funcional de Excel para la gestión de mantenimiento, seguridad y cumplimiento.
+Bienvenido al repositorio oficial del **Sistema KPI**. Este software automatiza la medición, procesamiento y visualización de indicadores críticos (Mantenimiento, Seguridad y Operaciones).
 
 ---
 
-## 🛠️ Stack Tecnológico
+## 📋 Requisitos Previos (Antes de empezar)
 
-- **Frontend:** React 19 + TypeScript + Vite.
-- **Backend:** Node.js (Express) para cálculos automatizados y proxy de API.
-- **Base de Datos:** Supabase (PostgreSQL) para datos relacionales y tiempo real.
-- **Estilos:** CSS Vanilla (Custom Properties) con enfoque en UX premium.
-- **Librerías Clave:** 
-  - `driver.js` (Tutorial intermedio).
-  - `lucide-react` (Iconografía).
-  - `react-hot-toast` (Notificaciones).
+Para ejecutar este proyecto en tu computadora local, necesitas tener instalado:
+1.  **Node.js** (Versión 18 o superior). Puedes descargarlo en [nodejs.org](https://nodejs.org/).
+2.  **Git** para clonar el repositorio.
+3.  **Una cuenta en Supabase** (Gratuita) para la base de datos PostgreSQL. Regístrate en [supabase.com](https://supabase.com/).
 
 ---
 
-## 🏗️ Arquitectura del Sistema
+## 🚀 Guía de Instalación Paso a Paso
 
-El sistema sigue una arquitectura de desacoplamiento entre captura y resultado:
+### 1. Clonar el repositorio
+Abre una terminal en tu computadora y ejecuta:
+```bash
+git clone https://github.com/Juan-7u7/kpis.git
+cd kpis
+```
 
-1.  **Capa de Captura:** Los usuarios ingresan datos granulares (fechas, booleanos, conteos).
-2.  **Capa de Procesamiento (Backend/API):** El servidor recibe la captura, identifica el tipo de fórmula y realiza el cálculo matemático. Asigna el color del semáforo basado en las metas configuradas.
-3.  **Capa de Persistencia:** Se guardan tanto los datos originales (bitácora) como el resultado final calculado.
-4.  **Capa de Visualización:** El frontend renderiza gráficas dinámicas (Donas, Barras 3D, Barras Horizontales) basadas en el tipo de dato.
+### 2. Instalar dependencias
+Instala todas las librerías necesarias ejecutando:
+```bash
+npm install
+```
 
----
+### 3. Configuración de la Base de Datos (Supabase)
+Sigue estos pasos para preparar tu base de datos:
+1.  Crea un nuevo proyecto en **Supabase**.
+2.  En el panel de tu proyecto, ve a la sección **SQL Editor**.
+3.  **Importante:** Ejecuta primero el contenido del archivo `bd.sql` (esto creará las tablas, relaciones y vistas).
+4.  Luego, ejecuta el contenido del archivo `seed.sql` (esto cargará los indicadores base y configuraciones de ejemplo).
 
-## 📈 Tipos de Indicadores y Lógica
+### 4. Variables de Entorno
+Crea un archivo llamado `.env` en la raíz del proyecto y copia el siguiente formato. Debes reemplazar los valores con tus credenciales de Supabase (las encuentras en *Project Settings > API*):
 
-| Tipo | KPI Ejemplo | Lógica de Cálculo |
-| :--- | :--- | :--- |
-| **Binario Documental** | Análisis de Mantto. | 2 documentos (100%), 1 documento (50%), 0 (0%). |
-| **Conteo** | Simulacros/Juntas | `(Cumplidos / Programados) * 100`. |
-| **Conteo Operativo** | Checklist Op. | `(Correctos / Total Operaciones) * 100`. |
-| **Tiempos (Fechas)** | Entrega Info. | Días entre solicitud y entrega. ≤ 2 días = 100% de cumplimiento por evento. |
-| **Sí/No** | Reportes HGE | Sí = 100%, No = 0%. |
+```env
+# Conexión Frontend (Vite)
+VITE_SUPABASE_URL=https://tu-proyecto.supabase.co
+VITE_SUPABASE_ANON_KEY=tu-clave-anon-aqui
 
----
-
-## 🚥 Reglas del Semáforo
-
-El sistema aplica colores automáticamente según el resultado porcentual:
-- 🟢 **Verde (Óptimo):** ≥ 100% (o meta configurada).
-- 🟡 **Amarillo (Alerta):** 80% - 99%.
-- 🔴 **Rojo (Riesgo):** < 80%.
-
----
-
-## 📂 Estructura del Proyecto
-
-```text
-├── api/                # Backend (Vercel Serverless Functions)
-│   └── index.ts        # Motor de cálculos y endpoints
-├── src/                # Frontend
-│   ├── components/     # Componentes (Modales, Cards, App)
-│   ├── lib/            # Configuración Supabase
-│   └── index.css       # Sistema de diseño y animaciones
-├── reglas/             # Documentación funcional y lógica de negocio
-├── bd.sql              # Estructura completa de la base de datos
-└── seed.sql            # Datos iniciales y configuración de KPIs
+# Conexión Backend (Node.js)
+SUPABASE_URL=https://tu-proyecto.supabase.co
+SUPABASE_ANON_KEY=tu-clave-anon-aqui
 ```
 
 ---
 
-## 🚀 Instalación y Desarrollo
+## 🏃 Cómo ejecutar el proyecto
 
-1.  **Clonar:** `git clone https://github.com/Juan-7u7/kpis.git`
-2.  **Dependencias:** `npm install`
-3.  **Variables de Env:** Configurar `.env` con las claves de Supabase.
-4.  **Ejecutar:** 
-    - Frontend: `npm run dev`
-    - Backend Local: `npm run dev:backend`
+Para ver la aplicación funcionando en tu navegador, necesitas correr dos procesos (puedes abrir dos terminales):
+
+### Opción A: Ejecutar todo el sistema (Recomendado)
+```bash
+npm run dev
+```
+Esto iniciará el **Frontend** en `http://localhost:5173`. 
+*Nota: Asegúrate de tener configurado el `.env` para que el Tablero pueda leer los datos.*
+
+### Opción B: Ejecutar solo el Backend (Para pruebas de API)
+```bash
+npm run server
+```
+Esto iniciará el servidor Express en `http://localhost:3000`.
 
 ---
 
-## 👤 Autor
-Proyecto diseñado para la optimización de métricas operativas por **Antigravity AI**.
+## 📂 Estructura del Menú de Documentación
+Si deseas profundizar en el funcionamiento interno, consulta nuestra carpeta `/docs`:
+- [Arquitectura Frontend](./docs/frontend.md)
+- [Arquitectura Backend](./docs/backend.md)
+- [Lógica de Fórmulas y Cálculos](./docs/formulas_kpis.md)
+- [Manual de Usuario Operativo](./docs/manual_usuario.md)
+
+---
+
+## 🛠️ Comandos Útiles
+- `npm run lint`: Verifica que no haya errores de formato o lógica en el código.
+- `npm run build`: Prepara la aplicación para ser subida a producción (Vercel).
+
+---
+
+## 🤝 Contribuciones
+Si deseas agregar nuevas fórmulas o mejorar el diseño:
+1.  Haz un Fork del proyecto.
+2.  Crea una rama con tu mejora (`git checkout -b feature/mejora`).
+3.  Envía un Pull Request.
+
+---
+
+**Autor:** Producido por **Antigravity AI** para la gestión de excelencia operativa.

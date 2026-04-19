@@ -1,36 +1,62 @@
 import React, { useState, useEffect } from 'react';
 import { X, TrendingUp, TrendingDown, Minus, Activity, FileText, Settings, MessageSquare, Table } from 'lucide-react';
 
+interface KpiData {
+  id: string;
+  kpi_id: string;
+  kpi_nombre: string;
+  area: string;
+  unidad?: string;
+  formula_tipo?: string;
+}
+
+interface HistoryItem {
+  mes: number;
+  mes_nombre: string;
+  valor: number;
+  unidad: string;
+  semaforo: string;
+  comentario: string | null;
+}
+
+interface KpiMeta {
+  meta_descripcion?: string;
+  formula_tipo?: string;
+  formula_descripcion?: string;
+  semaforo_verde_min?: number;
+  semaforo_amarillo_min?: number;
+}
+
 interface KpiDetailModalProps {
-  kpi: any;
+  kpi: KpiData;
   anio: string;
   onClose: () => void;
 }
 
 export default function KpiDetailModal({ kpi, anio, onClose }: KpiDetailModalProps) {
-  const [history, setHistory] = useState<any[]>([]);
-  const [meta, setMeta] = useState<any>(null);
+  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [meta, setMeta] = useState<KpiMeta | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const fetchHistory = async () => {
+      try {
+        setLoading(true);
+        const res = await fetch(`/api/kpi-historico/${kpi.kpi_id}?anio=${anio}`);
+        const body = await res.json();
+        if (body.success) {
+          setHistory(body.data);
+          setMeta(body.meta);
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchHistory();
   }, [kpi.kpi_id, anio]);
-
-  const fetchHistory = async () => {
-    try {
-      setLoading(true);
-      const res = await fetch(`/api/kpi-historico/${kpi.kpi_id}?anio=${anio}`);
-      const body = await res.json();
-      if (body.success) {
-        setHistory(body.data);
-        setMeta(body.meta);
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const getSemaforoColor = (semaforo: string) => {
     switch (semaforo?.toLowerCase()) {
