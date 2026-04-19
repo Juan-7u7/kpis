@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart3, Calendar, Filter, Search, Edit3, HelpCircle, Inbox, PlusCircle, Trash2 } from 'lucide-react';
-import { Toaster } from 'react-hot-toast';
+import { Toaster, toast } from 'react-hot-toast';
 import { driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
 import CaptureModal from './components/CaptureModal';
