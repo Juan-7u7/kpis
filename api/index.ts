@@ -101,7 +101,8 @@ app.get('/api/kpis', async (req, res) => {
         valor_auxiliar: r?.valor_auxiliar ?? null,
         unidad: r?.unidad_resultado ?? (kpi.tipo_resultado === 'porcentaje' ? '%' : ''),
         semaforo: r?.semaforo ?? 'gris',
-        orden_visual: kpi.orden_visual
+        orden_visual: kpi.orden_visual,
+        es_borrable: (kpi.orden_visual || 0) > 7
       };
     }) || [];
 
@@ -497,6 +498,45 @@ app.post('/api/kpis/create', async (req, res) => {
     const error = err as Error;
     console.error('Error creando KPI:', error);
     res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// DELETE /api/kpis/:id - Eliminar un KPI personalizado
+app.delete('/api/kpis/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // 1. Verificar si es borrable (orden_visual > 7)
+    const { data: kpi, error: fetchErr } = await supabase
+      .from('kpis')
+      .select('orden_visual')
+      .eq('id', id)
+      .single();
+
+    if (fetchErr || !kpi) {
+      return res.status(404).json({ success: false, error: 'KPI no encontrado' });
+    }
+
+    if (kpi.orden_visual <= 7) {
+      return res.status(403).json({ 
+        success: false, 
+        error: 'No se pueden eliminar los KPIs por defecto del sistema. Solo puedes eliminar los creados por ti.' 
+      });
+    }
+
+    // 2. Eliminar el KPI (la DB tiene borrado en cascada para kpi_config, capturas, resultados, etc.)
+    const { error: deleteErr } = await supabase
+      .from('kpis')
+      .delete()
+      .eq('id', id);
+
+    if (deleteErr) throw deleteErr;
+
+    res.json({ success: true, message: 'KPI eliminado correctamente' });
+  } catch (err: unknown) {
+    const error = err as Error;
+    console.error('Error eliminando KPI:', error);
+    res.status(500).json({ success: false, error: 'Error al intentar eliminar el KPI' });
   }
 });
 

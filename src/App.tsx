@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { BarChart3, Calendar, Filter, Search, Edit3, HelpCircle, Inbox, PlusCircle } from 'lucide-react';
+import { BarChart3, Calendar, Filter, Search, Edit3, HelpCircle, Inbox, PlusCircle, Trash2 } from 'lucide-react';
 import { Toaster } from 'react-hot-toast';
 import { driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
 import CaptureModal from './components/CaptureModal';
 import KpiDetailModal from './components/KpiDetailModal';
 import CreateKpiModal from './components/CreateKpiModal';
+import ConfirmModal from './components/ConfirmModal';
 
 interface KPI {
   id: string;
@@ -18,6 +19,7 @@ interface KPI {
   unidad: string;
   formula_tipo: string;
   tipo_resultado: string;
+  es_borrable?: boolean;
 }
 
 interface KpiGroup {
@@ -39,6 +41,7 @@ function App() {
   const [captureKpi, setCaptureKpi] = useState<KPI | null>(null);
   const [kpiForHistory, setKpiForHistory] = useState<KPI | null>(null);
   const [showCreateKpi, setShowCreateKpi] = useState(false);
+  const [kpiToDelete, setKpiToDelete] = useState<KPI | null>(null);
 
   const fetchKPIs = React.useCallback(async () => {
     setLoading(true);
@@ -63,6 +66,34 @@ function App() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchKPIs();
   }, [fetchKPIs]);
+
+  const handleDeleteKpiRequest = (kpi: KPI) => {
+    if (!kpi.es_borrable) {
+      toast.error('No puedes eliminar los KPIs por defecto del sistema.');
+      return;
+    }
+    setKpiToDelete(kpi);
+  };
+
+  const confirmDeleteKpi = async () => {
+    if (!kpiToDelete) return;
+
+    try {
+      const res = await fetch(`/api/kpis/${kpiToDelete.kpi_id}`, { method: 'DELETE' });
+      const data = await res.json();
+      
+      if (data.success) {
+        toast.success(`KPI eliminado: ${kpiToDelete.kpi_nombre}`);
+        fetchKPIs();
+      } else {
+        toast.error(data.error || 'Error al eliminar');
+      }
+    } catch {
+      toast.error('Error de conexión al eliminar KPI');
+    } finally {
+      setKpiToDelete(null);
+    }
+  };
 
   const getSemaforoColor = (semaforo: string) => {
     switch (semaforo?.toLowerCase()) {
@@ -183,14 +214,14 @@ function App() {
               <button 
                 onClick={startTour} 
                 style={{ background: 'var(--accent-color)', color: 'white', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 4px 10px rgba(59, 130, 246, 0.3)'}}
-                title="Ver Tutorial"
+                data-tooltip="Ver Tutorial"
               >
                 <HelpCircle size={18} />
               </button>
               <button
                 onClick={() => setShowCreateKpi(true)}
                 className="btn-nuevo-kpi"
-                title="Crear nuevo KPI"
+                data-tooltip="Crear nuevo KPI personalizado"
               >
                 <PlusCircle size={16} /> Nuevo KPI
               </button>
@@ -291,7 +322,7 @@ function App() {
                         // Abrimos el modal detallado que ya tiene la lógica de ayuda
                         setKpiForHistory(kpi);
                       }}
-                      title="Haz clic para ver la lógica de medición"
+                      data-tooltip="Métrica e Historial"
                       style={{ background: 'none', border: 'none', padding: '4px', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center' }}
                     >
                       <HelpCircle size={14} />
@@ -299,9 +330,17 @@ function App() {
                   </div>
                   <h3 className="kpi-name">{kpi.kpi_nombre}</h3>
                   
-                  <div className="kpi-card-actions" onClick={e => e.stopPropagation()}>
+                  <div className="kpi-card-actions" onClick={e => e.stopPropagation()} style={{ display: 'flex', gap: '8px' }}>
                      <button className={kpi.valor === null ? "kpi-edit-btn primary-pulse" : "kpi-edit-btn"} style={{ marginTop: 0 }} onClick={() => setCaptureKpi(kpi)}>
                        {kpi.valor === null ? <><PlusCircle size={14} /> Capturar</> : <><Edit3 size={14} /> Actualizar</>}
+                     </button>
+                     <button 
+                       className="kpi-edit-btn btn-delete" 
+                       style={{ marginTop: 0, padding: '0.4rem', color: kpi.es_borrable ? '#ef4444' : '#94a3b8', border: kpi.es_borrable ? '1px solid rgba(239, 68, 68, 0.3)' : undefined }} 
+                       onClick={() => handleDeleteKpiRequest(kpi)}
+                       data-tooltip={kpi.es_borrable ? "Eliminar KPI" : "KPI de Sistema"}
+                     >
+                       <Trash2 size={16} />
                      </button>
                   </div>
 
@@ -385,6 +424,21 @@ function App() {
         <CreateKpiModal
           onClose={() => setShowCreateKpi(false)}
           onSuccess={() => { setShowCreateKpi(false); fetchKPIs(); }}
+        />
+      )}
+
+      {kpiToDelete && (
+        <ConfirmModal 
+          title="Eliminar KPI Personalizado"
+          message={
+            <>
+              ¿Estás seguro de que deseas eliminar permanentemente el KPI <strong style={{ color: '#0f172a' }}>"{kpiToDelete.kpi_nombre}"</strong>?
+              <br/><br/>
+              Esta acción es irreversible y eliminará todo su historial de capturas.
+            </>
+          }
+          onConfirm={confirmDeleteKpi}
+          onCancel={() => setKpiToDelete(null)}
         />
       )}
     </div>
