@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, TrendingUp, TrendingDown, Minus, Activity, FileText, Settings, MessageSquare, Table } from 'lucide-react';
+import { X, TrendingUp, TrendingDown, Minus, Activity, FileText, MessageSquare, Table } from 'lucide-react';
 
 interface KpiData {
   id: string;
@@ -122,27 +122,76 @@ export default function KpiDetailModal({ kpi, anio, onClose }: KpiDetailModalPro
                  <p style={{ fontSize: '0.9rem', lineHeight: '1.5', color: 'var(--text-main)' }}>{meta?.meta_descripcion || 'Medición operativa del desempeño del área.'}</p>
                </div>
 
-               <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '15px', border: '1px solid #e2e8f0' }}>
-                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', marginBottom: '0.75rem', fontSize: '0.85rem', fontWeight: 700 }}>
-                   <Settings size={16} /> FÓRMULA MATEMÁTICA
-                 </div>
-                 <div style={{ background: 'white', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontFamily: 'monospace', fontSize: '0.95rem', textAlign: 'center', color: 'var(--accent-color)', fontWeight: 700 }}>
-                    {meta?.formula_tipo === 'si_no' && '[ (Captura == SÍ) ? 100% : 0% ]'}
-                    {meta?.formula_tipo === 'documental_doble' && '[ (Docs_Ok / 2) * 100 ]'}
-                    {meta?.formula_tipo === 'cumplidos_programados' && '[ (Cumplidos / Programados) * 100 ]'}
-                    {meta?.formula_tipo === 'correctos_total' && '[ (Correctos / Total) * 100 ]'}
-                    {meta?.formula_tipo === 'entregas_a_tiempo' && '[ (% Entregas <= 2 días) ]'}
-                    {!['si_no', 'documental_doble', 'cumplidos_programados', 'correctos_total', 'entregas_a_tiempo'].includes(meta?.formula_tipo ?? '') && '[ Cálculo Estándar % ]'}
-                 </div>
-                 <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '8px', fontStyle: 'italic' }}>
+                <div className='formula-visual-card'>
+                  <div className='formula-visual-title'> ¿Cómo se calcula este KPI?
+                  </div>
+                  {meta?.formula_tipo === 'si_no' && (
+                    <div className='formula-visual-body'>
+                      <div className='formula-branch'>
+                        <div className='formula-pill pill-input'> Marca SÍ</div>
+                        <div className='formula-arrow'>→</div>
+                        <div className='formula-pill pill-green'>100% </div>
+                      </div>
+                      <div className='formula-branch'>
+                        <div className='formula-pill pill-input'> Marca NO</div>
+                        <div className='formula-arrow'>→</div>
+                        <div className='formula-pill pill-red'>0% </div>
+                      </div>
+                    </div>
+                  )}
+                  {meta?.formula_tipo === 'documental_doble' && (
+                    <div className='formula-visual-body'>
+                      <div className='formula-fraction'>
+                        <div className='fraction-numerator'>Documentos entregados</div>
+                        <div className='fraction-line'></div>
+                        <div className='fraction-denominator'>2 documentos requeridos</div>
+                      </div>
+                      <div className='formula-arrow'>×</div>
+                      <div className='formula-pill pill-green'>100</div>
+                    </div>
+                  )}
+                  {meta?.formula_tipo === 'cumplidos_programados' && (
+                    <div className='formula-visual-body'>
+                      <div className='formula-fraction'>
+                        <div className='fraction-numerator'> Actividades Cumplidas</div>
+                        <div className='fraction-line'></div>
+                        <div className='fraction-denominator'> Actividades Programadas</div>
+                      </div>
+                      <div className='formula-arrow'>×</div>
+                      <div className='formula-pill pill-green'>100</div>
+                    </div>
+                  )}
+                  {meta?.formula_tipo === 'correctos_total' && (
+                    <div className='formula-visual-body'>
+                      <div className='formula-fraction'>
+                        <div className='fraction-numerator'> Operaciones Correctas</div>
+                        <div className='fraction-line'></div>
+                        <div className='fraction-denominator'> Total de Operaciones</div>
+                      </div>
+                      <div className='formula-arrow'>×</div>
+                      <div className='formula-pill pill-green'>100</div>
+                    </div>
+                  )}
+                  {meta?.formula_tipo === 'entregas_a_tiempo' && (
+                    <div className='formula-visual-body'>
+                      <div className='formula-fraction'>
+                        <div className='fraction-numerator'> Entregas en ≤ 2 días</div>
+                        <div className='fraction-line'></div>
+                        <div className='fraction-denominator'> Total de Entregas del mes</div>
+                      </div>
+                      <div className='formula-arrow'>×</div>
+                      <div className='formula-pill pill-green'>100</div>
+                    </div>
+                  )}
+                  {!['si_no','documental_doble','cumplidos_programados','correctos_total','entregas_a_tiempo'].includes(meta?.formula_tipo ?? '') && (
+                    <div className='formula-visual-body'>
+                      <div className='formula-pill pill-green'>Cálculo Estándar %</div>
+                    </div>
+                  )}
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', padding: '4px 14px 10px', fontStyle: 'italic', textAlign: 'center' }}>
                     {meta?.formula_descripcion || 'Se evalúa el cumplimiento contra la meta programada.'}
-                 </p>
-                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '8px' }}>
-                    <span style={{ background: 'rgba(59, 130, 246, 0.1)', color: 'var(--accent-color)', fontSize: '0.65rem', fontWeight: 700, padding: '2px 6px', borderRadius: '4px' }}>
-                      MÉTODO: {meta?.formula_tipo?.toUpperCase().replace(/_/g, ' ')}
-                    </span>
-                 </div>
-               </div>
+                  </p>
+                </div>
 
                <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '15px', border: '1px solid #e2e8f0' }}>
                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', marginBottom: '0.75rem', fontSize: '0.85rem', fontWeight: 700 }}>
@@ -163,7 +212,7 @@ export default function KpiDetailModal({ kpi, anio, onClose }: KpiDetailModalPro
             </div>
 
             <div style={{ background: 'rgba(59, 130, 246, 0.03)', padding: '1rem', borderRadius: '12px', border: '1px dashed rgba(59, 130, 246, 0.3)', marginBottom: '2rem' }}>
-               <h4 style={{ fontSize: '0.85rem', fontWeight: 700, marginBottom: '6px', color: 'var(--accent-color)' }}>💡 ¿Cómo mejorar este resultado?</h4>
+               <h4 style={{ fontSize: '0.85rem', fontWeight: 700, marginBottom: '6px', color: 'var(--accent-color)' }}> ¿Cómo mejorar este resultado?</h4>
                <p style={{ fontSize: '0.85rem', color: 'var(--text-main)', margin: 0 }}>
                  {meta?.formula_tipo === 'entregas_a_tiempo' && 'Asegúrate de registrar las fechas de entrega lo más cercano posible a la fecha de solicitud. El límite para cumplimiento es de 2 días.'}
                  {meta?.formula_tipo === 'cumplidos_programados' && 'Incrementa la eficiencia operativa cumpliendo con el 100% de las actividades programadas en el mes.'}

@@ -5,6 +5,7 @@ import { driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
 import CaptureModal from './components/CaptureModal';
 import KpiDetailModal from './components/KpiDetailModal';
+import CreateKpiModal from './components/CreateKpiModal';
 
 interface KPI {
   id: string;
@@ -37,6 +38,7 @@ function App() {
   // Modals
   const [captureKpi, setCaptureKpi] = useState<KPI | null>(null);
   const [kpiForHistory, setKpiForHistory] = useState<KPI | null>(null);
+  const [showCreateKpi, setShowCreateKpi] = useState(false);
 
   const fetchKPIs = React.useCallback(async () => {
     setLoading(true);
@@ -153,6 +155,15 @@ function App() {
             side: "right", 
             align: 'start' 
           }
+        },
+        { 
+          element: '.btn-nuevo-kpi', 
+          popover: { 
+            title: '✨ Creador de KPIs', 
+            description: '<div style="font-size: 0.95rem; line-height: 1.5;"><p>¿Necesitas medir algo nuevo? Utiliza nuestro <b>asistente inteligente</b>.</p><br/><p>Podrás definir parámetros, elegir cómo se calculará (conteo, verificación documental, fechas límite) y ajustar los umbrales de tu semáforo de manera intuitiva.</p></div>', 
+            side: "bottom", 
+            align: 'start' 
+          }
         }
       ]
     });
@@ -175,6 +186,13 @@ function App() {
                 title="Ver Tutorial"
               >
                 <HelpCircle size={18} />
+              </button>
+              <button
+                onClick={() => setShowCreateKpi(true)}
+                className="btn-nuevo-kpi"
+                title="Crear nuevo KPI"
+              >
+                <PlusCircle size={16} /> Nuevo KPI
               </button>
             </div>
             <p className="subtitle">Monitoreo inteligente de indicadores clave</p>
@@ -361,6 +379,13 @@ function App() {
             anio={selectedYear}
             onClose={() => setKpiForHistory(null)}
          />
+      )}
+
+      {showCreateKpi && (
+        <CreateKpiModal
+          onClose={() => setShowCreateKpi(false)}
+          onSuccess={() => { setShowCreateKpi(false); fetchKPIs(); }}
+        />
       )}
     </div>
   );

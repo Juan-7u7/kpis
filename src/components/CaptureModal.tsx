@@ -138,15 +138,68 @@ export default function CaptureModal({ kpi_id, anio, mes, onClose, onSuccess }: 
           <p style={{ fontSize: '0.85rem', color: '#1e40af', lineHeight: '1.5' }}>
             {config.config_json?.guia || 'Complete todos los campos requeridos para este periodo.'}
           </p>
-          <div style={{ marginTop: '10px', padding: '8px', background: 'white', borderRadius: '8px', border: '1px dashed var(--accent-color)', textAlign: 'center' }}>
-             <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '4px', textTransform: 'uppercase' }}>Fórmula de Cálculo:</span>
-             <code style={{ fontSize: '0.9rem', color: 'var(--accent-color)', fontWeight: 800 }}>
-                {config.formula_tipo === 'si_no' && '[ (Captura == SÍ) ? 100% : 0% ]'}
-                {config.formula_tipo === 'documental_doble' && '[ (Documentos / 2) * 100 ]'}
-                {config.formula_tipo === 'cumplidos_programados' && '[ (Cumplidos / Programados) * 100 ]'}
-                {config.formula_tipo === 'correctos_total' && '[ (Correctos / Total) * 100 ]'}
-                {config.formula_tipo === 'entregas_a_tiempo' && '[ (% Entregas <= 2 días) ]'}
-             </code>
+          <div className="formula-visual-card">
+            <div className="formula-visual-title">
+              <span className="formula-icon">f(x)</span> ¿Cómo se calcula este KPI?
+            </div>
+            {config.formula_tipo === 'si_no' && (
+              <div className="formula-visual-body">
+                <div className="formula-branch">
+                  <div className="formula-pill pill-input">Marca SÍ</div>
+                  <div className="formula-arrow">→</div>
+                  <div className="formula-pill pill-green">100%</div>
+                </div>
+                <div className="formula-branch">
+                  <div className="formula-pill pill-input">Marca NO</div>
+                  <div className="formula-arrow">→</div>
+                  <div className="formula-pill pill-red">0%</div>
+                </div>
+              </div>
+            )}
+            {config.formula_tipo === 'documental_doble' && (
+              <div className="formula-visual-body">
+                <div className="formula-fraction">
+                  <div className="fraction-numerator">Documentos entregados</div>
+                  <div className="fraction-line"></div>
+                  <div className="fraction-denominator">2 documentos requeridos</div>
+                </div>
+                <div className="formula-arrow">×</div>
+                <div className="formula-pill pill-green">100</div>
+              </div>
+            )}
+            {config.formula_tipo === 'cumplidos_programados' && (
+              <div className="formula-visual-body">
+                <div className="formula-fraction">
+                  <div className="fraction-numerator">Actividades Cumplidas</div>
+                  <div className="fraction-line"></div>
+                  <div className="fraction-denominator">Actividades Programadas</div>
+                </div>
+                <div className="formula-arrow">×</div>
+                <div className="formula-pill pill-green">100</div>
+              </div>
+            )}
+            {config.formula_tipo === 'correctos_total' && (
+              <div className="formula-visual-body">
+                <div className="formula-fraction">
+                  <div className="fraction-numerator">Operaciones Correctas</div>
+                  <div className="fraction-line"></div>
+                  <div className="fraction-denominator">Total de Operaciones</div>
+                </div>
+                <div className="formula-arrow">×</div>
+                <div className="formula-pill pill-green">100</div>
+              </div>
+            )}
+            {config.formula_tipo === 'entregas_a_tiempo' && (
+              <div className="formula-visual-body">
+                <div className="formula-fraction">
+                  <div className="fraction-numerator">Entregas en ≤ 2 días</div>
+                  <div className="fraction-line"></div>
+                  <div className="fraction-denominator">Total de Entregas del mes</div>
+                </div>
+                <div className="formula-arrow">×</div>
+                <div className="formula-pill pill-green">100</div>
+              </div>
+            )}
           </div>
         </div>
 

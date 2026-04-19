@@ -154,7 +154,9 @@ app.get('/api/kpi-historico/:kpi_id', async (req, res) => {
       .eq('kpi_id', kpi_id)
       .single();
 
-    if (metaErr) throw metaErr;
+    if (metaErr) {
+      console.warn('No se pudo cargar metadatos del KPI (v_kpis_detalle):', metaErr.message);
+    }
 
     // 2. Obtener Historial de Resultados con Comentarios de la Captura
     let query = supabase
@@ -349,6 +351,151 @@ app.post('/api/capturas', async (req, res) => {
   } catch (err: unknown) {
     const error = err as Error;
     console.error('Error capturando KPI:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ─── GET /api/areas ─────────────────────────────────────────────
+// Devuelve todas las áreas activas para el selector del formulario
+app.get('/api/areas', async (_req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('areas')
+      .select('id, nombre')
+      .eq('activo', true)
+      .order('nombre');
+    if (error) throw error;
+    res.json({ success: true, data });
+  } catch (err: unknown) {
+    const error = err as Error;
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ─── GET /api/kpis/orden ────────────────────────────────────────
+// Devuelve el siguiente número de orden visual disponible
+app.get('/api/kpis/orden', async (_req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('kpis')
+      .select('orden_visual')
+      .order('orden_visual', { ascending: false })
+      .limit(1);
+    if (error) throw error;
+    const nextOrder = data && data.length > 0 ? (data[0].orden_visual as number) + 1 : 1;
+    res.json({ success: true, next_order: nextOrder });
+  } catch (err: unknown) {
+    const error = err as Error;
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ─── POST /api/kpis/create ──────────────────────────────────────
+// Crea un nuevo KPI completo (kpis + kpi_config)
+interface CreateKpiBody {
+  nombre: string;
+  area_id: string;
+  meta_descripcion: string;
+  formula_tipo: 'si_no' | 'documental_doble' | 'cumplidos_programados' | 'correctos_total' | 'entregas_a_tiempo';
+  tipo_captura: 'binario_documental' | 'conteo' | 'conteo_operativo' | 'fechas';
+  tipo_resultado: 'porcentaje' | 'dias_y_porcentaje';
+  semaforo_verde_min: number;
+  semaforo_amarillo_min: number;
+  limite_dias?: number;
+  permite_multiple_evento_mes?: boolean;
+  campos_documentales?: string[];  // Para documental_doble
+  guia?: string;                   // Mensaje de guía para el usuario al capturar
+}
+
+app.post('/api/kpis/create', async (req, res) => {
+  try {
+    const body = req.body as CreateKpiBody;
+
+    const {
+      nombre, area_id, meta_descripcion, formula_tipo,
+      tipo_captura, tipo_resultado,
+      semaforo_verde_min, semaforo_amarillo_min,
+      limite_dias, permite_multiple_evento_mes,
+      campos_documentales, guia
+    } = body;
+
+    // Validaciones básicas
+    if (!nombre || !area_id || !meta_descripcion || !formula_tipo || !tipo_captura || !tipo_resultado) {
+      return res.status(400).json({ success: false, error: 'Faltan campos requeridos.' });
+    }
+
+    // 1. Obtener siguiente orden visual
+    const { data: ordenData } = await supabase
+      .from('kpis')
+      .select('orden_visual')
+      .order('orden_visual', { ascending: false })
+      .limit(1);
+    const nextOrder = ordenData && ordenData.length > 0 ? (ordenData[0].orden_visual as number) + 1 : 1;
+
+    // 2. Insertar en tabla kpis
+    const { data: newKpi, error: kpiError } = await supabase
+      .from('kpis')
+      .insert({
+        nombre,
+        area_id,
+        meta_descripcion,
+        descripcion: meta_descripcion,
+        formula_tipo,
+        tipo_captura,
+        tipo_resultado,
+        frecuencia: 'mensual',
+        orden_visual: nextOrder,
+        activo: true
+      })
+      .select('id')
+      .single();
+
+    if (kpiError) throw kpiError;
+    if (!newKpi) throw new Error('No se pudo crear el KPI');
+
+    // 3. Construir config_json según el tipo de fórmula
+    let configJson: Record<string, unknown> = {};
+    if (formula_tipo === 'documental_doble') {
+      configJson = {
+        campos: campos_documentales ?? ['documento_1', 'documento_2'],
+        regla: '100 si ambos true, 50 si uno true, 0 si ambos false'
+      };
+    } else if (formula_tipo === 'si_no') {
+      configJson = { regla: '100 si true, 0 si false' };
+    } else if (formula_tipo === 'cumplidos_programados') {
+      configJson = { formula: '(cumplidos / programados) * 100', si_programados_es_0: 'gris' };
+    } else if (formula_tipo === 'correctos_total') {
+      configJson = { formula: '(operaciones_correctas / total_operaciones) * 100', si_total_operaciones_es_0: 'gris' };
+    } else if (formula_tipo === 'entregas_a_tiempo') {
+      configJson = { formula: '(entregas_en_tiempo / total_entregas) * 100', limite_dias: limite_dias ?? 2 };
+    }
+
+    if (guia) configJson.guia = guia;
+
+    // 4. Insertar kpi_config
+    const { error: configError } = await supabase
+      .from('kpi_config')
+      .insert({
+        kpi_id: newKpi.id,
+        meta_valor: 100,
+        meta_operador: '>=',
+        limite_dias: formula_tipo === 'entregas_a_tiempo' ? (limite_dias ?? 2) : null,
+        semaforo_verde_min: semaforo_verde_min ?? 100,
+        semaforo_amarillo_min: semaforo_amarillo_min ?? 80,
+        semaforo_rojo_max: (semaforo_amarillo_min ?? 80) - 0.01,
+        permite_multiple_evento_mes: formula_tipo === 'entregas_a_tiempo'
+          ? true
+          : (permite_multiple_evento_mes ?? false),
+        requiere_justificacion: false,
+        config_json: configJson
+      });
+
+    if (configError) throw configError;
+
+    res.json({ success: true, kpi_id: newKpi.id, message: `KPI "${nombre}" creado exitosamente.` });
+  } catch (err: unknown) {
+    const error = err as Error;
+    console.error('Error creando KPI:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
