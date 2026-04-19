@@ -256,15 +256,45 @@ function App() {
                      </button>
                   </div>
 
-                  <div className="kpi-card-footer">
-                    <div className="kpi-result">
-                      <span className="kpi-value">{kpi.valor !== null ? kpi.valor : '--'}</span>
-                      {kpi.valor !== null && <span className="kpi-unit">{kpi.unidad}</span>}
-                    </div>
-                    <div className="kpi-status" title={kpi.valor === null ? "Necesita captura este mes" : "Estado visual del KPI"}>
-                      <span className="status-dot"></span>
-                      {kpi.semaforo === 'gris' ? 'Pendiente' : kpi.semaforo.charAt(0).toUpperCase() + kpi.semaforo.slice(1)}
-                    </div>
+                  <div className="kpi-card-footer" style={{ marginTop: 'auto', paddingTop: '1.5rem', width: '100%' }}>
+                    {kpi.valor !== null && kpi.tipo_resultado === 'porcentaje' ? (
+                      <div className="kpi-donut-container">
+                        <div className="radial-progress-wrapper">
+                          <div className="radial-progress" style={{ '--progress': kpi.valor } as React.CSSProperties}>
+                            <div className="radial-progress-inner">
+                              {kpi.valor}%
+                            </div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600, marginBottom: '4px' }}>CUMPLIMIENTO</div>
+                            <div className="kpi-status" title="Estado visual del KPI">
+                              <span className="status-dot"></span>
+                              {kpi.semaforo.charAt(0).toUpperCase() + kpi.semaforo.slice(1)}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ width: '100%' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                          <div className="kpi-result">
+                            <span className="kpi-value">{kpi.valor !== null ? kpi.valor : '--'}</span>
+                            {kpi.valor !== null && <span className="kpi-unit" style={{ marginLeft: '4px' }}>{kpi.unidad}</span>}
+                          </div>
+                          <div className="kpi-status" title={kpi.valor === null ? "Necesita captura este mes" : "Estado visual del KPI"}>
+                            <span className="status-dot"></span>
+                            {kpi.semaforo === 'gris' ? 'Pendiente' : kpi.semaforo.charAt(0).toUpperCase() + kpi.semaforo.slice(1)}
+                          </div>
+                        </div>
+                        {kpi.valor !== null && (
+                          <div className="linear-progress-container" title="Progreso cualitativo">
+                            <div className="linear-progress-bar" style={{ 
+                               width: kpi.semaforo === 'verde' ? '100%' : (kpi.semaforo === 'amarillo' ? '65%' : '25%') 
+                            }}></div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}

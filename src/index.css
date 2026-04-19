@@ -301,10 +301,67 @@ select:focus {
 }
 
 .kpi-value {
-  font-size: 2.5rem;
+  font-size: 2.2rem;
   font-weight: 700;
   line-height: 1;
   color: var(--card-color, var(--text-main));
+}
+
+/* Visual Graphics (Phase 9) */
+.kpi-donut-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.radial-progress-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.radial-progress {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: conic-gradient(rgba(var(--card-rgb), 1) calc(var(--progress) * 1%), #e2e8f0 0deg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+  flex-shrink: 0;
+}
+
+.radial-progress-inner {
+  width: 56px;
+  height: 56px;
+  background: var(--panel-bg);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--text-main);
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.linear-progress-container {
+  width: 100%;
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 4px;
+  margin-top: 12px;
+  overflow: hidden;
+}
+
+.linear-progress-bar {
+  height: 100%;
+  background: rgba(var(--card-rgb), 1);
+  border-radius: 4px;
+  transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .kpi-unit {
