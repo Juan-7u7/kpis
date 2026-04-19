@@ -98,12 +98,20 @@ export default function KpiDetailModal({ kpi, anio, onClose }: KpiDetailModalPro
 
                <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '15px', border: '1px solid #e2e8f0' }}>
                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', marginBottom: '0.75rem', fontSize: '0.85rem', fontWeight: 700 }}>
-                   <Settings size={16} /> CÁLCULO
+                   <Settings size={16} /> FÓRMULA MATEMÁTICA
                  </div>
-                 <p style={{ fontSize: '0.85rem', lineHeight: '1.4', color: 'var(--text-main)', marginBottom: '8px' }}>
+                 <div style={{ background: 'white', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontFamily: 'monospace', fontSize: '0.95rem', textAlign: 'center', color: 'var(--accent-color)', fontWeight: 700 }}>
+                    {meta?.formula_tipo === 'si_no' && '[ (Captura == SÍ) ? 100% : 0% ]'}
+                    {meta?.formula_tipo === 'documental_doble' && '[ (Docs_Ok / 2) * 100 ]'}
+                    {meta?.formula_tipo === 'cumplidos_programados' && '[ (Cumplidos / Programados) * 100 ]'}
+                    {meta?.formula_tipo === 'correctos_total' && '[ (Correctos / Total) * 100 ]'}
+                    {meta?.formula_tipo === 'entregas_a_tiempo' && '[ (% Entregas <= 2 días) ]'}
+                    {!['si_no', 'documental_doble', 'cumplidos_programados', 'correctos_total', 'entregas_a_tiempo'].includes(meta?.formula_tipo) && '[ Cálculo Estándar % ]'}
+                 </div>
+                 <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '8px', fontStyle: 'italic' }}>
                     {meta?.formula_descripcion || 'Se evalúa el cumplimiento contra la meta programada.'}
                  </p>
-                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '8px' }}>
                     <span style={{ background: 'rgba(59, 130, 246, 0.1)', color: 'var(--accent-color)', fontSize: '0.65rem', fontWeight: 700, padding: '2px 6px', borderRadius: '4px' }}>
                       MÉTODO: {meta?.formula_tipo?.toUpperCase().replace(/_/g, ' ')}
                     </span>

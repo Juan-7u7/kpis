@@ -103,16 +103,23 @@ export default function CaptureModal({ kpi_id, anio, mes, onClose, onSuccess }: 
         <button className="modal-close" onClick={onClose}><X size={24} /></button>
         <h2>Capturar: {config.kpi_nombre}</h2>
         
-        <div style={{ background: 'rgba(59, 130, 246, 0.05)', borderLeft: '4px solid var(--accent-color)', padding: '1rem', borderRadius: '4px 8px 8px 4px', marginBottom: '1.5rem', marginTop: '1rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent-color)', fontWeight: 700, marginBottom: '6px', fontSize: '0.85rem' }}>
+        <div style={{ background: 'rgba(59, 130, 246, 0.08)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(59, 130, 246, 0.2)', marginBottom: '1.5rem', marginTop: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--accent-color)', fontWeight: 700, marginBottom: '0.5rem', fontSize: '0.9rem' }}>
             <HelpCircle size={16} /> GUÍA DE MEDICIÓN
           </div>
-          <p style={{ fontSize: '0.9rem', color: 'var(--text-main)', lineHeight: '1.4', margin: 0 }}>
-             <b>Meta:</b> {config.meta_descripcion}
+          <p style={{ fontSize: '0.85rem', color: '#1e40af', lineHeight: '1.5' }}>
+            {config.config_json?.guia || 'Complete todos los campos requeridos para este periodo.'}
           </p>
-          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontStyle: 'italic', marginTop: '8px' }}>
-             <b>Cómo llenar:</b> {config.formula_descripcion || 'Ingresa los datos solicitados según las operaciones realizadas en el mes.'}
-          </p>
+          <div style={{ marginTop: '10px', padding: '8px', background: 'white', borderRadius: '8px', border: '1px dashed var(--accent-color)', textAlign: 'center' }}>
+             <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '4px', textTransform: 'uppercase' }}>Fórmula de Cálculo:</span>
+             <code style={{ fontSize: '0.9rem', color: 'var(--accent-color)', fontWeight: 800 }}>
+                {config.formula_tipo === 'si_no' && '[ (Captura == SÍ) ? 100% : 0% ]'}
+                {config.formula_tipo === 'documental_doble' && '[ (Documentos / 2) * 100 ]'}
+                {config.formula_tipo === 'cumplidos_programados' && '[ (Cumplidos / Programados) * 100 ]'}
+                {config.formula_tipo === 'correctos_total' && '[ (Correctos / Total) * 100 ]'}
+                {config.formula_tipo === 'entregas_a_tiempo' && '[ (% Entregas <= 2 días) ]'}
+             </code>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="capture-form">
