@@ -1276,6 +1276,120 @@ select:focus {
   margin-top: 1rem;
 }
 
+.custom-formula-tutorial {
+  margin-bottom: 1.5rem;
+  padding: 1.25rem;
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at top right, rgba(59, 130, 246, 0.14), transparent 34%),
+    linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  border: 1px solid rgba(37, 99, 235, 0.12);
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.06);
+}
+
+.custom-formula-tutorial__header {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.custom-formula-tutorial__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.14), rgba(59, 130, 246, 0.2));
+  color: #2563eb;
+  flex-shrink: 0;
+}
+
+.custom-formula-tutorial__header h4 {
+  margin: 0 0 0.35rem;
+  font-size: 1.05rem;
+  color: var(--text-main);
+}
+
+.custom-formula-tutorial__header p {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: var(--text-light);
+}
+
+.custom-formula-tutorial__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.custom-formula-tutorial__card {
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(37, 99, 235, 0.12);
+  border-radius: 14px;
+  padding: 1rem;
+}
+
+.custom-formula-tutorial__card-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.55rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.custom-formula-tutorial__card p {
+  margin: 0 0 0.75rem;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--text-light);
+}
+
+.custom-formula-tutorial__card ul {
+  margin: 0;
+  padding-left: 1rem;
+  display: grid;
+  gap: 0.35rem;
+  color: var(--text-main);
+  font-size: 0.87rem;
+}
+
+.custom-formula-example {
+  border-radius: 14px;
+  padding: 1rem;
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
+.custom-formula-example__title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #93c5fd;
+  margin-bottom: 0.65rem;
+}
+
+.custom-formula-example__content {
+  display: grid;
+  gap: 0.45rem;
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.custom-formula-example__content strong {
+  color: #f8fafc;
+}
+
+.custom-formula-example__content span {
+  font-family: monospace;
+  color: #bfdbfe;
+}
+
 .semaforo-config-grid {
   display: grid;
   gap: 1rem;
@@ -1421,6 +1535,16 @@ select:focus {
 
 .btn-create:hover:not(:disabled) {
   background: #059669;
+}
+
+@media (max-width: 768px) {
+  .custom-formula-tutorial__header {
+    flex-direction: column;
+  }
+
+  .custom-formula-tutorial__grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* =========================================================

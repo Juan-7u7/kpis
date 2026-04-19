@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import { supabase } from '../src/lib/supabase.js';
+import { evaluateCustomFormula, validateCustomFormula, type CustomFormulaConfig } from '../src/lib/customFormula.js';
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -265,6 +266,9 @@ app.post('/api/capturas', async (req, res) => {
             dias_entrega: diffDays, cumplio_tiempo: cumplio
          });
        }
+    } else if (tipo_captura === 'formula_personalizada') {
+       await supabase.from('captura_formula_personalizada')
+         .upsert({ captura_id, valores: detalles }, { onConflict: 'captura_id' });
     } else {
        throw new Error('Tipo de captura desconocido');
     }
@@ -273,7 +277,7 @@ app.post('/api/capturas', async (req, res) => {
     // Extraer formula_tipo y rangos del semáforo
     const { data: configKpi, error: cErr } = await supabase
       .from('v_kpis_detalle')
-      .select('formula_tipo, semaforo_verde_min, semaforo_amarillo_min')
+      .select('formula_tipo, semaforo_verde_min, semaforo_amarillo_min, config_json')
       .eq('kpi_id', kpi_id).single();
 
     if (!cErr && configKpi) {
@@ -318,6 +322,15 @@ app.post('/api/capturas', async (req, res) => {
           valor_resultado = (aTiempo / entregas.length) * 100;
           valor_auxiliar = sumDias / entregas.length; // Promedio de días
         }
+      } else if (f_tipo === 'formula_personalizada') {
+        const customFormula = (configKpi.config_json as { custom_formula?: CustomFormulaConfig })?.custom_formula;
+        const validation = customFormula ? validateCustomFormula(customFormula) : { valid: false, error: 'No se encontrÃ³ la configuraciÃ³n de la fÃ³rmula personalizada.' };
+
+        if (!validation.valid || !customFormula) {
+          throw new Error(validation.error || 'La fÃ³rmula personalizada no es vÃ¡lida.');
+        }
+
+        valor_resultado = evaluateCustomFormula(customFormula.expression, detalles as Record<string, number>);
       }
 
       if (seCalcula) {
@@ -397,14 +410,15 @@ interface CreateKpiBody {
   nombre: string;
   area_id: string;
   meta_descripcion: string;
-  formula_tipo: 'si_no' | 'documental_doble' | 'cumplidos_programados' | 'correctos_total' | 'entregas_a_tiempo';
-  tipo_captura: 'binario_documental' | 'conteo' | 'conteo_operativo' | 'fechas';
+  formula_tipo: 'si_no' | 'documental_doble' | 'cumplidos_programados' | 'correctos_total' | 'entregas_a_tiempo' | 'formula_personalizada';
+  tipo_captura: 'binario_documental' | 'conteo' | 'conteo_operativo' | 'fechas' | 'formula_personalizada';
   tipo_resultado: 'porcentaje' | 'dias_y_porcentaje';
   semaforo_verde_min: number;
   semaforo_amarillo_min: number;
   limite_dias?: number;
   permite_multiple_evento_mes?: boolean;
   campos_documentales?: string[];  // Para documental_doble
+  formula_personalizada?: CustomFormulaConfig;
   guia?: string;                   // Mensaje de guía para el usuario al capturar
 }
 
@@ -417,12 +431,19 @@ app.post('/api/kpis/create', async (req, res) => {
       tipo_captura, tipo_resultado,
       semaforo_verde_min, semaforo_amarillo_min,
       limite_dias, permite_multiple_evento_mes,
-      campos_documentales, guia
+      campos_documentales, formula_personalizada, guia
     } = body;
 
     // Validaciones básicas
     if (!nombre || !area_id || !meta_descripcion || !formula_tipo || !tipo_captura || !tipo_resultado) {
       return res.status(400).json({ success: false, error: 'Faltan campos requeridos.' });
+    }
+
+    if (formula_tipo === 'formula_personalizada') {
+      const validation = formula_personalizada ? validateCustomFormula(formula_personalizada) : { valid: false, error: 'Debes definir la formula personalizada.' };
+      if (!validation.valid) {
+        return res.status(400).json({ success: false, error: validation.error });
+      }
     }
 
     // 1. Obtener siguiente orden visual
@@ -469,6 +490,11 @@ app.post('/api/kpis/create', async (req, res) => {
       configJson = { formula: '(operaciones_correctas / total_operaciones) * 100', si_total_operaciones_es_0: 'gris' };
     } else if (formula_tipo === 'entregas_a_tiempo') {
       configJson = { formula: '(entregas_en_tiempo / total_entregas) * 100', limite_dias: limite_dias ?? 2 };
+    } else if (formula_tipo === 'formula_personalizada') {
+      configJson = {
+        formula: formula_personalizada?.expression,
+        custom_formula: formula_personalizada
+      };
     }
 
     if (guia) configJson.guia = guia;

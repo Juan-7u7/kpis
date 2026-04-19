@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Save, HelpCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { type CustomFormulaConfig } from '../lib/customFormula';
 
 interface CaptureModalProps {
   kpi_id: string;
@@ -20,6 +21,8 @@ interface KpiConfig {
   config_json?: {
     guia?: string;
     campos?: string[];
+    formula?: string;
+    custom_formula?: CustomFormulaConfig;
   };
 }
 
@@ -87,6 +90,10 @@ export default function CaptureModal({ kpi_id, anio, mes, onClose, onSuccess }: 
           } else if (cnf.tipo_captura === 'conteo_operativo') {
             initData.total_operaciones = '';
             initData.operaciones_correctas = '';
+          } else if (cnf.tipo_captura === 'formula_personalizada') {
+            (cnf.config_json?.custom_formula?.variables || []).forEach((variable) => {
+              initData[variable.key] = '';
+            });
           } else if (cnf.tipo_captura === 'fechas') {
             initData.entregas = [];
           }
@@ -174,6 +181,7 @@ export default function CaptureModal({ kpi_id, anio, mes, onClose, onSuccess }: 
         ? 'Falta 1 documento para llegar al 100% este mes.'
         : 'Debes confirmar 2 documentos para que el KPI llegue a 100% este mes.')
     : 'Confirma la evidencia documental requerida para completar este KPI.';
+  const customFormula = config.config_json?.custom_formula;
 
   return (
     <div className="modal-overlay">
@@ -184,6 +192,24 @@ export default function CaptureModal({ kpi_id, anio, mes, onClose, onSuccess }: 
         <div style={{ background: 'rgba(59, 130, 246, 0.08)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(59, 130, 246, 0.2)', marginBottom: '1.5rem', marginTop: '1rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--accent-color)', fontWeight: 700, marginBottom: '0.5rem', fontSize: '0.9rem' }}>
             <HelpCircle size={16} /> GUÍA DE MEDICIÓN
+            {false && (
+              <div style={{ padding: '1rem 1.25rem 1.25rem' }}>
+                <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.75rem' }}>
+                  FÃ³rmula configurada para este KPI
+                </div>
+                <div style={{ background: '#0f172a', color: '#e2e8f0', borderRadius: '12px', padding: '0.9rem 1rem', fontFamily: 'monospace', fontSize: '0.95rem', marginBottom: '0.85rem', overflowX: 'auto' }}>
+                  {customFormula?.expression || config?.config_json?.formula || 'Formula personalizada'}
+                </div>
+                <div style={{ display: 'grid', gap: '0.5rem' }}>
+                  {customFormula?.variables.map((variable) => (
+                    <div key={variable.key} style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                      <span>{variable.label}</span>
+                      <span style={{ fontFamily: 'monospace', color: 'var(--accent-color)', fontWeight: 700 }}>{variable.key}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
           <p style={{ fontSize: '0.85rem', color: '#1e40af', lineHeight: '1.5' }}>
             {config.config_json?.guia || 'Complete todos los campos requeridos para este periodo.'}
@@ -351,6 +377,35 @@ export default function CaptureModal({ kpi_id, anio, mes, onClose, onSuccess }: 
                   value={formData.operaciones_correctas ?? ''}
                   onChange={(e) => setFormData({...formData, operaciones_correctas: e.target.value === '' ? '' : Number(e.target.value)})}
                 />
+              </div>
+            </div>
+          )}
+
+          {config.tipo_captura === 'formula_personalizada' && (
+            <div className="form-group">
+              <label>Variables para la fÃ³rmula</label>
+              <div style={{ display: 'grid', gap: '0.85rem' }}>
+                {(customFormula?.variables || []).map((variable) => (
+                  <div key={variable.key}>
+                    <label style={{ display: 'block', marginBottom: '0.35rem', fontWeight: 700 }}>
+                      {variable.label}
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      required
+                      value={(formData[variable.key] as number | '') ?? ''}
+                      onChange={(e) => setFormData({
+                        ...formData,
+                        [variable.key]: e.target.value === '' ? '' : Number(e.target.value)
+                      })}
+                      placeholder={variable.helpText || `Captura el valor de ${variable.label.toLowerCase()}`}
+                    />
+                    <div className="field-hint" style={{ marginTop: '0.35rem' }}>
+                      Clave usada por la formula: <span style={{ fontFamily: 'monospace' }}>{variable.key}</span>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           )}

@@ -77,7 +77,8 @@ create table if not exists public.kpis (
       'binario_documental',
       'conteo',
       'conteo_operativo',
-      'fechas'
+      'fechas',
+      'formula_personalizada'
     )),
 
   constraint kpis_tipo_resultado_check
@@ -92,7 +93,8 @@ create table if not exists public.kpis (
       'cumplidos_programados',
       'correctos_total',
       'entregas_a_tiempo',
-      'si_no'
+      'si_no',
+      'formula_personalizada'
     ))
 );
 
@@ -323,6 +325,21 @@ create index if not exists ix_captura_entregas_fecha_entrega
   on public.captura_entregas(fecha_entrega);
 
 -- =========================================================
+-- TABLA: captura_formula_personalizada
+-- Variables numericas libres definidas por el usuario
+-- =========================================================
+create table if not exists public.captura_formula_personalizada (
+  id uuid primary key default gen_random_uuid(),
+  captura_id uuid not null unique references public.kpi_capturas(id) on delete cascade,
+  valores jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists ix_captura_formula_personalizada_captura_id
+  on public.captura_formula_personalizada(captura_id);
+
+-- =========================================================
 -- TABLA: kpi_resultados
 -- Resultado final mensual por KPI
 -- =========================================================
@@ -435,6 +452,12 @@ execute function public.set_updated_at();
 drop trigger if exists trg_captura_entregas_updated_at on public.captura_entregas;
 create trigger trg_captura_entregas_updated_at
 before update on public.captura_entregas
+for each row
+execute function public.set_updated_at();
+
+drop trigger if exists trg_captura_formula_personalizada_updated_at on public.captura_formula_personalizada;
+create trigger trg_captura_formula_personalizada_updated_at
+before update on public.captura_formula_personalizada
 for each row
 execute function public.set_updated_at();
 
