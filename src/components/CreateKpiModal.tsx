@@ -74,6 +74,13 @@ const FORMULA_OPTIONS: FormulaOption[] = [
 
 const STEPS = ['Información', 'Fórmula', 'Semáforo', 'Confirmar'];
 
+const parseNumericInput = (value: string, fallback: number) => {
+  if (value.trim() === '') return fallback;
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
 const CreateKpiModal: React.FC<CreateKpiModalProps> = ({ onClose, onSuccess }) => {
   const [step, setStep] = useState(0);
   const [areas, setAreas] = useState<Area[]>([]);
@@ -85,9 +92,9 @@ const CreateKpiModal: React.FC<CreateKpiModalProps> = ({ onClose, onSuccess }) =
   const [metaDescripcion, setMetaDescripcion] = useState('');
   const [guia, setGuia] = useState('');
   const [formulaTipo, setFormulaTipo] = useState<FormulaType | ''>('');
-  const [limiteDias, setLimiteDias] = useState(2);
-  const [verdeMin, setVerdeMin] = useState(100);
-  const [amarilloMin, setAmarilloMin] = useState(80);
+  const [limiteDias, setLimiteDias] = useState('2');
+  const [verdeMin, setVerdeMin] = useState('100');
+  const [amarilloMin, setAmarilloMin] = useState('80');
   const [camposDocumentales, setCamposDocumentales] = useState<string[]>(['', '']);
 
   useEffect(() => {
@@ -98,11 +105,14 @@ const CreateKpiModal: React.FC<CreateKpiModalProps> = ({ onClose, onSuccess }) =
   }, []);
 
   const selectedFormula = FORMULA_OPTIONS.find(f => f.value === formulaTipo);
+  const limiteDiasValue = parseNumericInput(limiteDias, 2);
+  const verdeMinValue = parseNumericInput(verdeMin, 100);
+  const amarilloMinValue = parseNumericInput(amarilloMin, 80);
 
   const canNext = () => {
     if (step === 0) return nombre.trim() !== '' && areaId !== '' && metaDescripcion.trim() !== '';
     if (step === 1) return formulaTipo !== '';
-    if (step === 2) return verdeMin > amarilloMin;
+    if (step === 2) return verdeMin.trim() !== '' && amarilloMin.trim() !== '' && verdeMinValue > amarilloMinValue;
     return true;
   };
 
@@ -116,9 +126,9 @@ const CreateKpiModal: React.FC<CreateKpiModalProps> = ({ onClose, onSuccess }) =
         formula_tipo: formulaTipo,
         tipo_captura: selectedFormula?.tipo_captura,
         tipo_resultado: selectedFormula?.tipo_resultado,
-        semaforo_verde_min: verdeMin,
-        semaforo_amarillo_min: amarilloMin,
-        limite_dias: formulaTipo === 'entregas_a_tiempo' ? limiteDias : undefined,
+        semaforo_verde_min: verdeMinValue,
+        semaforo_amarillo_min: amarilloMinValue,
+        limite_dias: formulaTipo === 'entregas_a_tiempo' ? limiteDiasValue : undefined,
         campos_documentales: formulaTipo === 'documental_doble'
           ? camposDocumentales.filter(c => c.trim() !== '')
           : undefined,
@@ -265,7 +275,7 @@ const CreateKpiModal: React.FC<CreateKpiModalProps> = ({ onClose, onSuccess }) =
                       style={{ width: '100px' }}
                       value={limiteDias}
                       min={1} max={30}
-                      onChange={e => setLimiteDias(Number(e.target.value))}
+                      onChange={e => setLimiteDias(e.target.value)}
                     />
                     <span className="field-hint">días o menos = cumplimiento</span>
                   </div>
@@ -312,11 +322,11 @@ const CreateKpiModal: React.FC<CreateKpiModalProps> = ({ onClose, onSuccess }) =
                         className="field-input semaforo-input"
                         value={verdeMin}
                         min={1} max={100}
-                        onChange={e => setVerdeMin(Number(e.target.value))}
+                        onChange={e => setVerdeMin(e.target.value)}
                       />
                       <span className="field-hint">%</span>
                     </div>
-                    <span className="field-hint">El KPI es verde si el resultado es &ge; {verdeMin}%</span>
+                    <span className="field-hint">El KPI es verde si el resultado es &ge; {verdeMinValue}%</span>
                   </div>
                 </div>
 
@@ -330,11 +340,11 @@ const CreateKpiModal: React.FC<CreateKpiModalProps> = ({ onClose, onSuccess }) =
                         className="field-input semaforo-input"
                         value={amarilloMin}
                         min={1} max={99}
-                        onChange={e => setAmarilloMin(Number(e.target.value))}
+                        onChange={e => setAmarilloMin(e.target.value)}
                       />
                       <span className="field-hint">%</span>
                     </div>
-                    <span className="field-hint">Amarillo: &ge; {amarilloMin}% y &lt; {verdeMin}%</span>
+                    <span className="field-hint">Amarillo: &ge; {amarilloMinValue}% y &lt; {verdeMinValue}%</span>
                   </div>
                 </div>
 
@@ -342,13 +352,13 @@ const CreateKpiModal: React.FC<CreateKpiModalProps> = ({ onClose, onSuccess }) =
                   <div className="semaforo-dot rojo-dot"></div>
                   <div>
                     <label className="field-label">Rojo (Riesgo) — automático</label>
-                    <div className="semaforo-auto-value">&lt; {amarilloMin}%</div>
+                    <div className="semaforo-auto-value">&lt; {amarilloMinValue}%</div>
                     <span className="field-hint">Calculado automáticamente</span>
                   </div>
                 </div>
               </div>
 
-              {verdeMin <= amarilloMin && (
+              {verdeMin.trim() !== '' && amarilloMin.trim() !== '' && verdeMinValue <= amarilloMinValue && (
                 <div className="semaforo-warning">
                   El umbral verde debe ser mayor al umbral amarillo.
                 </div>

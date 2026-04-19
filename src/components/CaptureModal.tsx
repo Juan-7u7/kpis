@@ -24,10 +24,10 @@ interface KpiConfig {
 }
 
 interface KpiFormData {
-  programados?: number;
-  cumplidos?: number;
-  total_operaciones?: number;
-  operaciones_correctas?: number;
+  programados?: number | '';
+  cumplidos?: number | '';
+  total_operaciones?: number | '';
+  operaciones_correctas?: number | '';
   entregas?: Array<{
     solicitud: string;
     entrega: string;
@@ -36,6 +36,28 @@ interface KpiFormData {
   }>;
   [key: string]: string | number | boolean | object | undefined;
 }
+
+const parseCountValue = (value: number | '' | undefined) => {
+  if (value === '' || value === undefined) return 0;
+  return value;
+};
+
+const normalizeDocumentFields = (config?: KpiConfig | null) => {
+  const configuredFields = config?.config_json?.campos?.filter(Boolean) ?? [];
+
+  if (config?.formula_tipo === 'documental_doble') {
+    return [configuredFields[0] || 'documento_1', configuredFields[1] || 'documento_2'];
+  }
+
+  return configuredFields.length > 0 ? configuredFields : ['confirmacion_documental'];
+};
+
+const formatDocumentLabel = (campo: string, index: number) => {
+  const normalized = campo.replace(/_/g, ' ').trim();
+  if (!normalized) return `Documento ${index + 1}`;
+
+  return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+};
 
 export default function CaptureModal({ kpi_id, anio, mes, onClose, onSuccess }: CaptureModalProps) {
   const [loading, setLoading] = useState(true);
@@ -57,14 +79,14 @@ export default function CaptureModal({ kpi_id, anio, mes, onClose, onSuccess }: 
           // Local initialization of form state
           const initData: KpiFormData = {};
           if (cnf.tipo_captura === 'binario_documental') {
-            const campos = cnf.config_json?.campos || ['confirmacion_documental'];
+            const campos = normalizeDocumentFields(cnf);
             campos.forEach((c: string) => initData[c] = false);
           } else if (cnf.tipo_captura === 'conteo') {
-            initData.programados = 0;
-            initData.cumplidos = 0;
+            initData.programados = '';
+            initData.cumplidos = '';
           } else if (cnf.tipo_captura === 'conteo_operativo') {
-            initData.total_operaciones = 0;
-            initData.operaciones_correctas = 0;
+            initData.total_operaciones = '';
+            initData.operaciones_correctas = '';
           } else if (cnf.tipo_captura === 'fechas') {
             initData.entregas = [];
           }
@@ -90,6 +112,18 @@ export default function CaptureModal({ kpi_id, anio, mes, onClose, onSuccess }: 
 
     if (config.tipo_captura === 'binario_documental') {
       detalles = Object.keys(formData).map(k => ({ campo: k, valor: formData[k] }));
+    } else if (config.tipo_captura === 'conteo') {
+      detalles = {
+        ...formData,
+        programados: parseCountValue(formData.programados),
+        cumplidos: parseCountValue(formData.cumplidos)
+      };
+    } else if (config.tipo_captura === 'conteo_operativo') {
+      detalles = {
+        ...formData,
+        total_operaciones: parseCountValue(formData.total_operaciones),
+        operaciones_correctas: parseCountValue(formData.operaciones_correctas)
+      };
     } else {
       detalles = formData;
     }
@@ -124,6 +158,22 @@ export default function CaptureModal({ kpi_id, anio, mes, onClose, onSuccess }: 
 
   if (loading) return <div className="modal-overlay"><div className="spinner"></div></div>;
   if (!config) return null;
+
+  const documentFields = config.tipo_captura === 'binario_documental'
+    ? normalizeDocumentFields(config)
+    : [];
+  const completedDocuments = documentFields.filter((campo) => formData[campo] === true).length;
+  const documentaryScore = config.formula_tipo === 'documental_doble'
+    ? (completedDocuments >= 2 ? 100 : completedDocuments === 1 ? 50 : 0)
+    : (completedDocuments > 0 ? 100 : 0);
+  const remainingDocuments = Math.max(0, documentFields.length - completedDocuments);
+  const documentaryMessage = config.formula_tipo === 'documental_doble'
+    ? (remainingDocuments === 0
+      ? 'Listo: ya estan confirmados los 2 documentos y el KPI quedara en 100%.'
+      : remainingDocuments === 1
+        ? 'Falta 1 documento para llegar al 100% este mes.'
+        : 'Debes confirmar 2 documentos para que el KPI llegue a 100% este mes.')
+    : 'Confirma la evidencia documental requerida para completar este KPI.';
 
   return (
     <div className="modal-overlay">
@@ -167,6 +217,27 @@ export default function CaptureModal({ kpi_id, anio, mes, onClose, onSuccess }: 
                 <div className="formula-pill pill-green">100</div>
               </div>
             )}
+            {config.formula_tipo === 'documental_doble' && (
+              <div style={{ padding: '0 1rem 1rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(120px, 1fr))', gap: '0.75rem', width: '100%' }}>
+                  <div style={{ background: '#fff7ed', border: '1px solid #fdba74', borderRadius: '12px', padding: '0.85rem', textAlign: 'center' }}>
+                    <div style={{ fontSize: '0.8rem', color: '#9a3412', marginBottom: '0.35rem', fontWeight: 700 }}>0 documentos</div>
+                    <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#c2410c' }}>0%</div>
+                  </div>
+                  <div style={{ background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: '12px', padding: '0.85rem', textAlign: 'center' }}>
+                    <div style={{ fontSize: '0.8rem', color: '#a16207', marginBottom: '0.35rem', fontWeight: 700 }}>1 documento</div>
+                    <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#ca8a04' }}>50%</div>
+                  </div>
+                  <div style={{ background: '#ecfdf5', border: '1px solid #86efac', borderRadius: '12px', padding: '0.85rem', textAlign: 'center' }}>
+                    <div style={{ fontSize: '0.8rem', color: '#166534', marginBottom: '0.35rem', fontWeight: 700 }}>2 documentos</div>
+                    <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#16a34a' }}>100%</div>
+                  </div>
+                </div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: '0.75rem' }}>
+                  Para llegar a 100% debes confirmar ambos documentos dentro de esta captura mensual.
+                </div>
+              </div>
+            )}
             {config.formula_tipo === 'cumplidos_programados' && (
               <div className="formula-visual-body">
                 <div className="formula-fraction">
@@ -207,7 +278,24 @@ export default function CaptureModal({ kpi_id, anio, mes, onClose, onSuccess }: 
           {config.tipo_captura === 'binario_documental' && (
             <div className="form-group">
               <label>Validación Documental</label>
-              {(config.config_json?.campos || ['confirmacion_documental']).map((campo: string) => (
+              {config.formula_tipo === 'documental_doble' && (
+                <div style={{ marginBottom: '1rem', background: documentaryScore === 100 ? '#ecfdf5' : '#eff6ff', border: `1px solid ${documentaryScore === 100 ? '#86efac' : '#bfdbfe'}`, borderRadius: '14px', padding: '1rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
+                    <div>
+                      <div style={{ fontSize: '0.8rem', fontWeight: 800, letterSpacing: '0.03em', color: documentaryScore === 100 ? '#166534' : '#1d4ed8', textTransform: 'uppercase' }}>
+                        Resultado estimado del mes
+                      </div>
+                      <div style={{ fontSize: '0.95rem', color: 'var(--text-main)', marginTop: '0.15rem' }}>
+                        {documentaryMessage}
+                      </div>
+                    </div>
+                    <div style={{ minWidth: '82px', textAlign: 'center', background: documentaryScore === 100 ? '#dcfce7' : '#dbeafe', color: documentaryScore === 100 ? '#166534' : '#1d4ed8', borderRadius: '999px', padding: '0.6rem 0.9rem', fontWeight: 800, fontSize: '1.05rem' }}>
+                      {documentaryScore}%
+                    </div>
+                  </div>
+                </div>
+              )}
+              {documentFields.map((campo: string, index) => (
                 <div key={campo} className="checkbox-row">
                   <input 
                     type="checkbox" 
@@ -215,7 +303,11 @@ export default function CaptureModal({ kpi_id, anio, mes, onClose, onSuccess }: 
                     checked={!!formData[campo]}
                     onChange={(e) => setFormData({...formData, [campo]: e.target.checked})}
                   />
-                  <label htmlFor={campo}>Confirmar: {campo.replace(/_/g, ' ').toUpperCase()}</label>
+                  <label htmlFor={campo}>
+                    {config.formula_tipo === 'documental_doble'
+                      ? `Documento ${index + 1}: ${formatDocumentLabel(campo, index)}`
+                      : `Confirmar: ${formatDocumentLabel(campo, index)}`}
+                  </label>
                 </div>
               ))}
             </div>
@@ -227,16 +319,16 @@ export default function CaptureModal({ kpi_id, anio, mes, onClose, onSuccess }: 
                 <label>Total Programados</label>
                 <input 
                   type="number" min="0" required
-                  value={formData.programados || 0}
-                  onChange={(e) => setFormData({...formData, programados: Number(e.target.value)})}
+                  value={formData.programados ?? ''}
+                  onChange={(e) => setFormData({...formData, programados: e.target.value === '' ? '' : Number(e.target.value)})}
                 />
               </div>
               <div className="form-group">
                 <label>Total Cumplidos</label>
                 <input 
-                  type="number" min="0" max={formData.programados || 0} required
-                  value={formData.cumplidos || 0}
-                  onChange={(e) => setFormData({...formData, cumplidos: Number(e.target.value)})}
+                  type="number" min="0" max={parseCountValue(formData.programados)} required
+                  value={formData.cumplidos ?? ''}
+                  onChange={(e) => setFormData({...formData, cumplidos: e.target.value === '' ? '' : Number(e.target.value)})}
                 />
               </div>
             </div>
@@ -248,16 +340,16 @@ export default function CaptureModal({ kpi_id, anio, mes, onClose, onSuccess }: 
                 <label>Operaciones Totales</label>
                 <input 
                   type="number" min="0" required
-                  value={formData.total_operaciones || 0}
-                  onChange={(e) => setFormData({...formData, total_operaciones: Number(e.target.value)})}
+                  value={formData.total_operaciones ?? ''}
+                  onChange={(e) => setFormData({...formData, total_operaciones: e.target.value === '' ? '' : Number(e.target.value)})}
                 />
               </div>
               <div className="form-group">
                 <label>Operaciones Correctas</label>
                 <input 
-                  type="number" min="0" max={formData.total_operaciones || 0} required
-                  value={formData.operaciones_correctas || 0}
-                  onChange={(e) => setFormData({...formData, operaciones_correctas: Number(e.target.value)})}
+                  type="number" min="0" max={parseCountValue(formData.total_operaciones)} required
+                  value={formData.operaciones_correctas ?? ''}
+                  onChange={(e) => setFormData({...formData, operaciones_correctas: e.target.value === '' ? '' : Number(e.target.value)})}
                 />
               </div>
             </div>

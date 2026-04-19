@@ -26,14 +26,25 @@ interface KpiGroup {
   [area: string]: KPI[];
 }
 
+const getCurrentPeriod = () => {
+  const now = new Date();
+
+  return {
+    year: String(now.getFullYear()),
+    month: String(now.getMonth() + 1)
+  };
+};
+
 function App() {
+  const currentPeriod = getCurrentPeriod();
   const [kpis, setKpis] = useState<KPI[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Filters
-  const [selectedYear, setSelectedYear] = useState('2026');
-  const [selectedMonth, setSelectedMonth] = useState('2');
+  const [selectedYear, setSelectedYear] = useState(currentPeriod.year);
+  const [selectedMonth, setSelectedMonth] = useState(currentPeriod.month);
+  const [isAutoPeriod, setIsAutoPeriod] = useState(true);
   const [selectedArea, setSelectedArea] = useState('Todas');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -66,6 +77,32 @@ function App() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchKPIs();
   }, [fetchKPIs]);
+
+  useEffect(() => {
+    if (!isAutoPeriod) return;
+
+    let intervalId: number | undefined;
+
+    const syncPeriodWithCalendar = () => {
+      const nextPeriod = getCurrentPeriod();
+      setSelectedYear(nextPeriod.year);
+      setSelectedMonth(nextPeriod.month);
+    };
+
+    const now = new Date();
+    const nextMidnight = new Date(now);
+    nextMidnight.setHours(24, 0, 0, 0);
+
+    const timeoutId = window.setTimeout(() => {
+      syncPeriodWithCalendar();
+      intervalId = window.setInterval(syncPeriodWithCalendar, 24 * 60 * 60 * 1000);
+    }, nextMidnight.getTime() - now.getTime());
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      if (intervalId) window.clearInterval(intervalId);
+    };
+  }, [isAutoPeriod]);
 
   const handleDeleteKpiRequest = (kpi: KPI) => {
     if (!kpi.es_borrable) {
@@ -127,6 +164,7 @@ function App() {
   }, {});
 
   const areasList = Array.from(new Set(kpis.map(k => k.area)));
+  const availableYears = Array.from({ length: 3 }, (_, index) => String(new Date().getFullYear() + index));
 
   const startTour = () => {
     const driverObj = driver({
@@ -256,10 +294,22 @@ function App() {
           <div className="filter-group">
             <span className="filter-label"><Calendar size={14} /> PERIODO</span>
             <div className="period-selectors">
-              <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)}>
-                {['2025', '2026', '2027'].map(y => <option key={y} value={y}>{y}</option>)}
+              <select
+                value={selectedYear}
+                onChange={(e) => {
+                  setIsAutoPeriod(false);
+                  setSelectedYear(e.target.value);
+                }}
+              >
+                {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
               </select>
-              <select value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)}>
+              <select
+                value={selectedMonth}
+                onChange={(e) => {
+                  setIsAutoPeriod(false);
+                  setSelectedMonth(e.target.value);
+                }}
+              >
                 <option value="1">Enero</option>
                 <option value="2">Febrero</option>
                 <option value="3">Marzo</option>
