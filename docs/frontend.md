@@ -1,61 +1,115 @@
-# 💻 Documentación Profunda del Frontend (Interfaz)
+# Arquitectura frontend
 
-Este documento proporciona un análisis exhaustivo de la arquitectura, decisiones de diseño y lógica de ejecución de la interfaz de usuario.
+## Stack
 
----
+- React
+- TypeScript
+- CSS plano en `src/index.css`
+- componentes modales para creacion, captura y detalle
 
-## 🏛️ Arquitectura de Estado y Flujo de Datos
+## Pantallas y componentes principales
 
-La aplicación utiliza un patrón de **Unidirectional Data Flow** (Flujo de datos unidireccional) centrado en el componente `App.tsx`.
+### `src/App.tsx`
 
-### 1. Gestión de Filtros
-El estado de la aplicación se sincroniza mediante tres pilares:
-- **Periodo (Año/Mes)**: Al cambiar estos valores, se dispara automáticamente el callback `fetchKPIs` mediante un `useEffect` con dependencias optimizadas.
-- **Búsqueda y Área**: Estos filtros se aplican **in-memory** (en el cliente) sobre el arreglo de KPIs ya descargado, lo que proporciona una experiencia de filtrado instantánea sin latencia de red.
+Responsable de:
 
-### 2. Sincronización de Modales
-Se utilizan estados de objeto (`captureKpi` y `kpiForHistory`) en lugar de simples booleanos. Esto permite que el modal reciba automáticamente los metadatos del indicador seleccionado al abrirse, eliminando la necesidad de consultas redundantes a la API.
+- cargar KPIs segun mes y anio
+- aplicar filtros por area y busqueda
+- abrir modales de captura, detalle y creacion
+- mantener el periodo actual por defecto de forma automatica
 
----
+### `src/components/CreateKpiModal.tsx`
 
-## 🎨 Visualización Avanzada (3D Isometric & Donut Charts)
+Responsable de:
 
-### Gráficas 3D Isométricas
-A diferencia de las librerías tradicionales (Canvas/SVG), estas gráficas están construidas puramente con **CSS 3D Containers**.
-- **Lógica**: Se mapea el valor histórico (0-100) a la propiedad `height` de un pseudo-elemento CSS.
-- **Perspectiva**: Se aplica `transform: rotateX(55deg) rotateZ(-45deg)` al contenedor para lograr la proyección caballera/isométrica.
-- **Interactividad**: Al pasar el mouse, se utilizan filtros de brillo (`brightness`) para resaltar la barra seleccionada sin re-renderizar el componente.
+- alta guiada de KPIs en 4 pasos
+- seleccion del tipo de formula
+- configuracion del semaforo
+- soporte para formula personalizada
+- tutorial visual para explicar formula personalizada
 
-### Donas de Progreso (Bento Cards)
-Utilizan la propiedad `background: conic-gradient`. El porcentaje del KPI se inyecta como una variable CSS `--progress` directamente en el atributo `style` de React, lo que permite aprovechar la aceleración por hardware del navegador.
+Cambios recientes relevantes:
 
----
+- inputs numericos editables sin forzar `0`
+- textos corregidos por problemas de encoding
+- flujo mas intuitivo para formula personalizada
+- plantillas de calculo para formula personalizada
+- tutorial completo dentro del paso de formula
 
-## 📋 Formulario de Captura Dinámico (`CaptureModal.tsx`)
+### `src/components/CaptureModal.tsx`
 
-El motor de formularios es capaz de auto-configurarse basándose en la respuesta del endpoint `/api/kpi-config/:id`.
+Responsable de:
 
-### Tipos de Input por Lógica:
-1.  **Vista de Documentos**: Genera dinámicamente un listado de checkboxes. Cada checkbox representa un requisito administrativo.
-2.  **Vista Operativa**: Muestra campos de comparación `A vs B` (Ej: Programados vs Realizados) con validación inmediata para evitar que el valor realizado sea mayor al programado.
-3.  **Registro de Entregas**: Implementa un arreglo de estados local. El usuario puede añadir infinitas filas de "Solicitud vs Entrega". El componente calcula el diferencial de días en tiempo real para dar feedback visual antes de guardar.
+- renderizar el formulario correcto segun `tipo_captura`
+- mostrar guias y ayudas de captura
+- capturar:
+  - binario documental
+  - conteo
+  - conteo operativo
+  - fechas
+  - formula personalizada
 
----
+Cambios recientes relevantes:
 
-## 💅 Sistema de Estilos y Temas
-El proyecto utiliza un sistema de **Design Tokens** definidos en `:root`:
+- `documental_doble` ahora muestra mejor el progreso 0 / 50 / 100
+- soporte dinamico para variables de formula personalizada
 
-| Variable | Propósito | Valor Base |
-| :--- | :--- | :--- |
-| `--accent-color` | Color de marca y botones primarios | `#3b82f6` (Azul Moderno) |
-| `--bg-main` | Fondo de la aplicación | `#f1f5f9` (Light Blue Grey) |
-| `--card-bg` | Fondo de tarjetas con efecto cristal | `rgba(255, 255, 255, 0.9)` |
-| `--text-main` | Color de texto principal | `#1e293b` |
+### `src/components/KpiDetailModal.tsx`
 
-**Efecto Glassmorphism**: Se aplica `backdrop-filter: blur(10px)` en los modales para dar una sensación de profundidad y modernidad premium.
+Responsable de:
 
----
+- mostrar historico
+- mostrar comparativos por mes
+- apoyar el analisis del resultado de cada KPI
 
-## ⚡ Estrategias de Rendimiento
-- **Memoización**: Uso de `React.useCallback` para evitar que las funciones de petición se re-creen en cada render, previniendo loops infinitos en los `useEffect`.
-- **Skeleton Loading**: Mientras `loading` es `true`, el sistema mantiene el layout pero muestra estados neutros para evitar saltos visuales bruscos (Layout Shift).
+## Flujo de creacion de KPI
+
+1. Informacion basica
+2. Formula
+3. Semaforo
+4. Confirmacion
+
+### Formula personalizada en frontend
+
+Cuando el usuario elige esta opcion:
+
+- se muestra una guia visual explicando para que sirve
+- se muestran pasos recomendados
+- se permite definir datos a capturar
+- se ofrece una plantilla de calculo
+- se muestra una vista previa de la expresion
+- se valida la expresion antes de permitir continuar
+
+## Periodo actual por defecto
+
+El frontend ya no depende de un anio fijo hardcodeado.
+
+- toma el mes actual del sistema
+- toma el anio actual del sistema
+- si cambia el calendario, el periodo por defecto se ajusta automaticamente
+
+## Estilos
+
+Los estilos viven principalmente en `src/index.css`.
+
+Se agregaron bloques visuales especificos para:
+
+- tutorial de formula personalizada
+- tarjetas de seleccion de formula
+- resumen de confirmacion
+- bloques de semaforo
+
+## Verificacion recomendada
+
+Despues de cambios en el frontend:
+
+```bash
+npx tsc -b
+```
+
+Y despues validar manualmente:
+
+- creacion de un KPI normal
+- creacion de un KPI con formula personalizada
+- captura de cada tipo de KPI
+- visualizacion del historico

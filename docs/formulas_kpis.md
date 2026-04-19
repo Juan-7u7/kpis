@@ -1,65 +1,157 @@
-# 🧮 Guía Maestra de Fórmulas y Reglas de Decisión
+# Formulas y reglas de negocio
 
-Este documento es la referencia oficial para la interpretación de los números generados por el sistema.
+Este documento resume como calcula el sistema cada tipo de KPI y como se asigna el semaforo.
 
----
+## 1. Cumplimiento si / no
 
-## 📐 Algoritmos de Cálculo Detallados
+### Uso
 
-### 1. Modelo de Cumplimiento Binario (SÍ/NO)
-- **Caso de Uso**: Auditorías rápidas o entrega de reportes únicos.
-- **Matemáticas**: `X ∈ {0, 100}`.
-- **Regla de Semáforo**:
-  - Habitualmente, `100` es Verde y `0` es Rojo. No hay estado de transición (Amarillo) a menos que se configure una meta manual muy específica.
+Para actividades que solo pueden estar cumplidas o no cumplidas.
 
-### 2. Modelo de Evidencia Documental (Doble)
-- **Caso de Uso**: Procesos que requieren dos componentes críticos para ser válidos (ej. Reporte preliminar + Reporte final).
-- **Ejemplo**:
-  - Item 1: "Factura cargada"
-  - Item 2: "XML validado"
-- **Puntuación**:
-  - 2/2 -> 100%
-  - 1/2 -> 50%
-  - 0/2 -> 0%
+### Calculo
 
-### 3. Modelo de Eficacia (Cumplidos / Programados)
-- **Caso de Uso**: Seguimiento a planes de mantenimiento o capacitación.
-- **Fórmula**: `(Actual / Meta) * 100`.
-- **Consideración Especial**:
-  - Si el numerador es mayor al denominador (Sobre-cumplimiento), el resultado puede exceder el 100%. Sin embargo, el sistema trunca la visualización del semáforo a Verde como valor máximo de éxito.
+- evidencia marcada = 100
+- evidencia no marcada = 0
 
-### 4. Modelo de Eficiencia Operativa (Correctos / Total)
-- **Caso de Uso**: Inspecciones de seguridad o calidad en línea de producción.
-- **Fórmula**: `(∑ Sin Hallazgos / ∑ Inspecciones Totales) * 100`.
-- **Impacto**: Este KPI es muy sensible. Una sola operación incorrecta en una muestra pequeña (ej. 1 de 5) baja el resultado al 80%, disparando inmediatamente alertas amarillas.
+### Ejemplos
 
-### 5. Modelo de Oportunidad (ANS - Acuerdos de Nivel de Servicio)
-- **Caso de Uso**: Tiempo de respuesta a solicitudes de almacén o compras.
-- **Lógica**: Se basa en la ventana de tiempo de **48 horas hábiles** (2 días).
-- **Puntaje**:
-  - Por cada entrega, se calcula: `Diferencia = Fecha_Fin - Fecha_Inicio`.
-  - Si `Diferencia <= 2 días` -> **Válido (1)**.
-  - El porcentaje es la suma de Válidos entre el total de la muestra.
+- envio de reporte
+- confirmacion documental
+- entrega de acuse
 
----
+## 2. Documental doble
 
-## 📈 Lógica de Semáforo y Escalas de Color
+### Uso
 
-El sistema no utiliza una escala estática universal; cada KPI puede tener sus propios umbrales definidos en el administrador:
+Para procesos que necesitan dos documentos o dos evidencias.
 
-| Métrica de Ejemplo | Umbral Rojo | Umbral Amarillo | Umbral Verde |
-| :--- | :--- | :--- | :--- |
-| **Seguridad Ind.** | < 99% | 99% - 99.9% | 100% |
-| **Mantenimiento** | < 80% | 80% - 89% | >= 90% |
-| **Administración** | < 70% | 70% - 84% | >= 85% |
+### Calculo
 
-### Estados Especiales:
-- **Estado Gris (Pendiente)**: Representa que el mes sigue "abierto" o no se ha realizado ninguna captura. Este estado es vital para identificar omisiones administrativas.
-- **Redondeo**: Todos los cálculos se realizan con precisión de 4 decimales y se muestran al usuario final redondeados a **1 decimal** para facilitar la lectura sin perder precisión técnica.
+- 2 documentos entregados = 100
+- 1 documento entregado = 50
+- 0 documentos entregados = 0
 
----
+### Ejemplos
 
-## 🔄 Proceso de Actualización de Fórmulas
-Si una regla de negocio cambia (ej. el tiempo de entrega pasa de 2 a 3 días), el cambio debe realizarse en:
-1.  **Backend**: Modificar la constante en el controlador de `api/index.ts`.
-2.  **Base de Datos**: Actualizar la columna `formula_descripcion` para que el usuario vea la información correcta en el modal de detalles.
+- presupuesto + plan de trabajo
+- factura + xml
+
+## 3. Cumplidos / programados
+
+### Uso
+
+Para comparar lo realizado contra lo planeado.
+
+### Calculo
+
+```text
+(cumplidos / programados) * 100
+```
+
+### Ejemplos
+
+- simulacros
+- capacitaciones
+- auditorias
+
+## 4. Correctos / total operaciones
+
+### Uso
+
+Para medir calidad operativa o ejecucion correcta.
+
+### Calculo
+
+```text
+(operaciones_correctas / total_operaciones) * 100
+```
+
+### Ejemplos
+
+- checklist operativo
+- inspecciones correctas
+- procesos sin error
+
+## 5. Entregas a tiempo
+
+### Uso
+
+Para medir cumplimiento contra un limite de dias.
+
+### Logica
+
+- cada entrega se evalua contra un limite de dias configurado
+- el porcentaje se calcula con base en cuantas entregas cumplen ese limite
+
+### Calculo
+
+```text
+(entregas_en_tiempo / total_entregas) * 100
+```
+
+Ademas, el sistema guarda un valor auxiliar con el promedio de dias de entrega.
+
+## 6. Formula personalizada
+
+### Uso
+
+Para KPIs que no entran en ninguna formula predeterminada.
+
+### Como funciona
+
+- el usuario define variables propias
+- el usuario elige una plantilla o escribe una expresion libre
+- el sistema valida que todas las variables usadas existan
+- el sistema calcula el resultado evaluando la expresion con los valores capturados
+
+### Ejemplo
+
+```text
+Variables:
+- tickets_resueltos
+- tickets_recibidos
+
+Formula:
+(tickets_resueltos / tickets_recibidos) * 100
+```
+
+### Reglas de validacion
+
+- la formula no puede estar vacia
+- debe existir al menos una variable
+- cada variable debe tener clave unica
+- la formula no puede usar variables inexistentes
+- no puede dividir entre cero
+
+### Operaciones soportadas
+
+- suma: `+`
+- resta: `-`
+- multiplicacion: `*`
+- division: `/`
+- parentesis: `(` y `)`
+- numeros constantes
+
+## 7. Semaforo
+
+Cada KPI usa tres estados:
+
+- verde: resultado mayor o igual al umbral verde
+- amarillo: resultado mayor o igual al umbral amarillo y menor al verde
+- rojo: resultado menor al umbral amarillo
+
+## 8. Redondeo
+
+- el sistema calcula y guarda con precision decimal
+- la visualizacion se redondea para mostrar porcentajes legibles
+
+## 9. Mantenimiento
+
+Si agregas o cambias tipos de formula, debes revisar:
+
+- `src/components/CreateKpiModal.tsx`
+- `src/components/CaptureModal.tsx`
+- `src/lib/customFormula.ts`
+- `api/index.ts`
+- `bd.sql`
+- `docs/custom-formula-migration.sql` si la base ya existe

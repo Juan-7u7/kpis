@@ -1,71 +1,130 @@
-# ⚙️ Documentación Profunda del Backend (Servidor y Base de Datos)
+# Arquitectura backend
 
-Este documento detalla la lógica de servidor, la integridad de los datos y el funcionamiento interno del motor de cálculo.
+## Stack
 
----
+- Express
+- Supabase client
+- PostgreSQL en Supabase
 
-## 🏗️ Arquitectura de la Base de Datos (Supabase/Postgres)
+El backend principal vive en `api/index.ts`.
 
-El diseño de la base de datos sigue principios de **Normalización** para asegurar que los datos no se dupliquen y se mantenga el historial exacto.
+## Responsabilidades
 
-### Relaciones del Esquema:
-1.  **KPIs (Maestro)**: Contiene el "Qué" y "Cómo" de la métrica.
-    - Se relaciona 1:N con `kpi_resultados`.
-    - Se relaciona 1:1 (mediante lógica de negocio) con sus campos de configuración.
-2.  **Periodos**: Define el "Cuándo". Cada registro es una combinación única de `anio` y `mes`.
-3.  **Capturas vs Resultados**: 
-    - Una **Captura** es el acto de ingresar los datos brutos (ej. fechas, conteos).
-    - Un **Resultado** es el producto procesado del motor de cálculo. Existe una relación 1:1 entre una captura finalizada y su resultado calculado para asegurar trazabilidad.
+- exponer endpoints REST para lectura y escritura
+- guardar capturas mensuales
+- calcular el resultado del KPI
+- asignar el semaforo
+- crear nuevos KPIs con su configuracion
 
-### Vista del Diccionario de Datos (`v_kpis_detalle`)
-Esta vista es el corazón de la comunicación Backend-Frontend. Realiza JOINs complejos entre `kpis`, `areas` y tablas de configuración para entregar un objeto JSON listo para ser interpretado por el generador de formularios de React.
+## Endpoints principales
 
----
+### `GET /api/kpis`
 
-## 🧠 Motor de Cálculo: Análisis por Tipo de Fórmula
+Devuelve la lista de KPIs para un mes y anio.
 
-El motor reside en el endpoint `POST /api/capturas`. A continuación se detalla el procesamiento interno:
+Incluye:
 
-### Estructura del Objeto de Captura:
-```json
-{
-  "kpi_id": "UUID",
-  "anio": 2026,
-  "mes": 2,
-  "tipo_captura": "conteo | fechas | si_no | documental_doble",
-  "detalles": { ... } // Varía según tipo_captura
-}
-```
+- area
+- nombre
+- formula
+- valor
+- semaforo
+- estado de borrado
 
-### Flujo de Ejecución:
-1.  **Validación de Periodo**: Busca el `id` del periodo basado en año y mes. Si no existe, lanza un error de integridad.
-2.  **Persistencia Granular**: Según el `tipo_captura`, los datos se insertan en tablas específicas (`captura_conteo`, `captura_entregas`, etc.). Esto permite que si en el futuro cambia la fórmula, podamos recalcular basándonos en los datos originales.
-3.  **Carga de Configuración**: Se consultan los umbrales de semáforo (`verde_min`, `amarillo_min`) configurados para ese KPI específico.
-4.  **Cálculo Aritmético**:
-    - Se aplican las reglas de negocio (ej. Promedio de días para entregas).
-    - Se redondea a 2 decimales para consistencia visual.
-5.  **Evaluación de Semáforo**: Lógica condicional anidada para asignar el string `verde`, `amarillo` o `rojo`.
-6.  **Cierre de Transacción (Upsert)**: Se guarda el resultado final en `kpi_resultados` vinculándolo a la captura actual.
+### `GET /api/kpi-config/:kpi_id`
 
----
+Entrega la configuracion necesaria para renderizar el formulario de captura.
 
-## 📡 Detalle de API y Protocolos
+### `GET /api/kpi-historico/:kpi_id`
 
-### Seguridad y CORS
-La API está configurada para aceptar peticiones desde cualquier origen (CORS limitado en producción) y utiliza encabezados JSON estándar.
+Entrega historico anual del KPI con comentarios y semaforo.
 
-### Errores y Excepciones
-El sistema implementa un middleware de captura de errores global que devuelve respuestas estandarizadas:
-```json
-{
-  "success": false,
-  "error": "Mensaje detallado para el desarrollador"
-}
-```
-Esto permite que el frontend (`App.tsx`) muestre mensajes de alerta claros al usuario mediante `react-hot-toast`.
+### `GET /api/areas`
 
----
+Devuelve las areas activas para el selector del creador.
 
-## ⚡ Optimización en Supabase
-- **Índices**: Las columnas `kpi_id` y `periodo_id` en `kpi_resultados` tienen índices únicos de tipo B-Tree para asegurar que las consultas de historial anual sean instantáneas.
-- **Vercel Functions**: El código está optimizado para ejecutarse en ambientes *Serverless*, minimizando el arranque en frío (Cold Start) mediante la reutilización de la conexión a Supabase.
+### `POST /api/capturas`
+
+Guarda la captura mensual y calcula el resultado final.
+
+### `POST /api/kpis/create`
+
+Crea el KPI, su configuracion y su metadata operativa.
+
+## Persistencia por tipo de captura
+
+El sistema guarda la captura en tablas especializadas:
+
+- `captura_binaria_documental`
+- `captura_conteo`
+- `captura_conteo_operativo`
+- `captura_entregas`
+- `captura_formula_personalizada`
+
+Esto permite recalcular reglas sin perder el dato original.
+
+## Formula personalizada
+
+### Validacion
+
+El backend usa `src/lib/customFormula.ts` para:
+
+- normalizar claves
+- validar la configuracion
+- evaluar la expresion matematica
+
+### Al crear un KPI
+
+`POST /api/kpis/create`:
+
+- valida `formula_personalizada`
+- guarda `formula_tipo = formula_personalizada`
+- guarda `tipo_captura = formula_personalizada`
+- persiste la expresion y variables en `config_json.custom_formula`
+
+### Al capturar
+
+`POST /api/capturas`:
+
+- guarda los valores en `captura_formula_personalizada`
+- vuelve a cargar `config_json.custom_formula`
+- evalua la expresion con los valores capturados
+- genera `valor_resultado`
+- aplica semaforo
+
+## Migracion necesaria
+
+Si la base ya existia antes de formula personalizada, debes ejecutar:
+
+- `docs/custom-formula-migration.sql`
+
+La migracion:
+
+- actualiza `kpis_formula_tipo_check`
+- actualiza `kpis_tipo_captura_check`
+- crea `captura_formula_personalizada`
+- crea indice y trigger asociados
+
+## Semaforo
+
+La evaluacion es:
+
+- verde: `valor_resultado >= semaforo_verde_min`
+- amarillo: `valor_resultado >= semaforo_amarillo_min`
+- rojo: cualquier valor menor
+
+## Archivos clave para mantenimiento
+
+- `api/index.ts`
+- `src/lib/customFormula.ts`
+- `bd.sql`
+- `docs/custom-formula-migration.sql`
+
+## Verificacion recomendada
+
+Cuando cambies reglas del backend:
+
+1. prueba crear un KPI de cada tipo
+2. prueba capturar datos de cada tipo
+3. valida un KPI de formula personalizada
+4. revisa que no fallen las constraints de Supabase

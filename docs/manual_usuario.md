@@ -1,75 +1,172 @@
-# 📗 MANUAL OFICIAL DE USUARIO: SISTEMA KPI'S
+# Manual de usuario
 
----
+## 1. Que hace el sistema
 
-## 📌 1. PRESENTACIÓN DEL SISTEMA
-El sistema **KPI's** es una plataforma de inteligencia operativa diseñada para centralizar, calcular y analizar los Indicadores Clave de Desempeño de la organización. Su objetivo principal es eliminar la ambigüedad en la captura de datos y proporcionar una visualización clara del cumplimiento frente a las metas establecidas.
+Este sistema permite:
 
----
+- consultar KPIs por mes y anio
+- filtrar por area y por texto
+- capturar resultados mensuales
+- crear KPIs nuevos desde la interfaz
+- revisar el historico de cada KPI
 
-## 🚥 2. ENTENDIMIENTO DEL SEMÁFORO (KPI SCORING)
-El sistema evalúa cada resultado automáticamente y asigna un color basado en rangos técnicos:
+## 2. Como leer el semaforo
 
-| Estado | Rango | Interpretación |
-| :--- | :--- | :--- |
-| **Verde (Óptimo)** | **100%** | Se ha cumplido con la meta total definida. |
-| **Amarillo (Alerta)** | **80% a 99%** | El desempeño es aceptable pero muestra áreas de oportunidad. |
-| **Rojo (Riesgo)** | **< 80%** | Incumplimiento crítico. Requiere revisión de procesos. |
-| **Gris (Pendiente)** | **N/A** | No se han capturado datos para este periodo aún. |
+Cada KPI usa tres rangos configurables:
 
----
+- Verde: cumplimiento optimo
+- Amarillo: alerta o cumplimiento parcial
+- Rojo: riesgo o incumplimiento
+- Gris: sin captura para ese periodo
 
-## 🎛️ 3. NAVEGACIÓN Y FILTROS
-Al ingresar al Dashboard, usted encontrará las siguientes herramientas de control:
-1.  **Selector de Año y Mes:** Ubicados en la barra superior. Cambie estos valores para consultar meses anteriores o prepararse para capturar el mes actual.
-2.  **Barra de Búsqueda:** Escriba el nombre de un KPI o área para filtrar rápidamente los resultados visibles.
-3.  **Filtro por Área:** Un menú desplegable que le permite enfocarse solo en "Mantenimiento", "Seguridad" o "Cumplimiento".
+Los umbrales se configuran al crear o editar la regla del KPI.
 
----
+## 3. Navegacion principal
 
-## 📝 4. GUÍA DE CAPTURA POR TIPO DE KPI
-El sistema adapta sus formularios según la naturaleza de lo que se mide. Aquí se explica cómo llenar cada uno:
+En la vista principal puedes:
 
-### A. KPIs de Verificación Documental (Ej: Análisis de Mantto.)
-- **Qué hacer:** Marque las casillas "Presupuesto" y/o "Plan de Trabajo" si ya cuenta con ellos.
-- **Resultado:** Si marca ambos obtiene 100%. Si marca uno obtiene 50%.
-- **Consejo:** Deje un comentario en el campo de "Observaciones" si falta algún documento para justificar el 50%.
+- cambiar el mes y el anio del tablero
+- buscar por nombre del KPI o por area
+- abrir el detalle historico de un KPI
+- abrir el modal de captura
+- crear nuevos KPIs
 
-### B. KPIs de Conteo Simple (Ej: Simulacros y Capacitación)
-- **Campos:** 
-  - **Programados:** Cuántas actividades se planearon en el mes.
-  - **Cumplidos:** Cuántas se realizaron realmente.
-- **Regla:** Nunca ingrese un número de "Cumplidos" mayor al de "Programados".
+Nota: el sistema abre por defecto en el mes y anio actuales.
 
-### C. KPIs de Operaciones (Ej: Checklist Operacional)
-- **Campos:** 
-  - **Total Operaciones:** La suma total de vuelos o movimientos del mes.
-  - **Correctas:** Cuántas de esas operaciones cumplieron con el procedimiento al 100%.
-- **Nota:** Si no hubo operaciones en el mes, deje ambos campos en 0. El sistema marcará un estado de "Sin Actividad" en lugar de un error.
+## 4. Como capturar un KPI
 
-### D. KPIs de Tiempos y Fechas (Ej: Entrega de Info.)
-- **Acción:** Haga clic en "Agregar Evento" por cada entrega realizada en el mes.
-- **Dato:** Ingrese la Fecha de Solicitud y la Fecha de Entrega.
-- **Lógica:** El sistema calcula los días transcurridos. Para ganar el "Verde", la diferencia debe ser de 2 días o menos.
+Haz clic en el KPI y completa el formulario segun el tipo de captura.
 
----
+### KPI tipo si/no
 
-## 📈 5. ANÁLISIS DE DATOS E HISTÓRICO
-Para profundizar en el análisis de un indicador:
-1.  **Gráfica Isométrica (Efecto 3D):** Al hacer clic en el KPI, verá barras que representan los 12 meses del año. La altura de la barra es proporcional al porcentaje obtenido.
-2.  **Comparativa Mensual:** Debajo del título verá una flecha (verde o roja). Esta indica si su desempeño mejoró o empeoró respecto al mes inmediatamente anterior.
-3.  **Bitácora de Historial:** Use la tabla inferior para leer los comentarios de otros colaboradores en meses pasados. Esto ayuda a identificar patrones de falla.
+- marca la evidencia si se cumplio
+- resultado:
+  - marcado = 100%
+  - no marcado = 0%
 
----
+### KPI documental doble
 
-## ❓ 6. PREGUNTAS FRECUENTES (FAQ)
-- **¿Puedo corregir una captura?** 
-  Sí. Al hacer clic en "Actualizar" puede modificar los datos y el sistema recalculará el semáforo al instante.
-- **¿Por qué mi KPI sale en 0% si capturé datos?**
-  Revise que los datos ingresados sean correctos (ej: que no haya puesto 0 en cumplidos). Si es un KPI documental, verifique que las casillas estén marcadas.
-- **¿El Dashboard se actualiza solo?**
-  Sí. En cuanto usted guarda un cambio, el servidor procesa los datos y refresca el tablero global.
+- marca los 2 documentos requeridos
+- resultado:
+  - 2 de 2 = 100%
+  - 1 de 2 = 50%
+  - 0 de 2 = 0%
 
----
-*Fin del documento oficial.*
-*(Este archivo está diseñado para ser copiado y pegado en Microsoft Word)*
+La pantalla de captura ya muestra el progreso y explica cuanto falta para llegar a 100%.
+
+### KPI cumplidos / programados
+
+- captura actividades programadas
+- captura actividades cumplidas
+- el sistema calcula `(cumplidos / programados) * 100`
+
+### KPI correctos / total
+
+- captura total de operaciones
+- captura operaciones correctas
+- el sistema calcula `(operaciones_correctas / total_operaciones) * 100`
+
+### KPI entregas a tiempo
+
+- agrega cada evento del mes
+- registra fecha de solicitud y fecha de entrega
+- el sistema calcula cuantos eventos estuvieron dentro del limite de dias configurado
+
+### KPI de formula personalizada
+
+El flujo tiene una guia integrada dentro del creador. En resumen:
+
+1. defines los datos que se van a capturar
+2. eliges una plantilla de calculo o escribes una formula libre
+3. confirmas semaforo y guardas
+
+Ejemplo:
+
+- dato 1: tickets resueltos
+- dato 2: tickets recibidos
+- formula: `(tickets_resueltos / tickets_recibidos) * 100`
+
+## 5. Como crear un KPI nuevo
+
+El flujo de alta tiene 4 pasos:
+
+1. Informacion
+2. Formula
+3. Semaforo
+4. Confirmar
+
+### Paso 1. Informacion
+
+Captura:
+
+- nombre del indicador
+- area responsable
+- evidencia requerida
+- guia opcional para quien captura
+
+### Paso 2. Formula
+
+Elige una de estas opciones:
+
+- Cumplimiento si / no
+- Documental doble
+- Cumplidos / programados
+- Correctos / total operaciones
+- Entregas en tiempo
+- Formula personalizada
+
+### Paso 3. Semaforo
+
+Define:
+
+- umbral verde
+- umbral amarillo
+- rojo se calcula automaticamente
+
+### Paso 4. Confirmar
+
+Revisa toda la configuracion antes de crear el KPI.
+
+## 6. Tutorial de formula personalizada
+
+Cuando eliges `Formula personalizada`, el sistema muestra una guia visual completa.
+
+### Que debes hacer
+
+- pensar que quieres medir
+- definir los datos a capturar cada mes
+- elegir una plantilla de calculo
+- revisar la expresion final
+
+### Plantillas disponibles
+
+- porcentaje de cumplimiento
+- diferencia
+- suma total
+- promedio
+- formula libre
+
+### Recomendaciones
+
+- usa nombres claros para cada dato
+- evita nombres ambiguos
+- revisa que la formula represente el KPI real
+- si quieres un porcentaje, normalmente debes multiplicar por 100
+
+## 7. Problemas comunes
+
+### El KPI personalizado no se puede crear
+
+Si aparece un error relacionado con `kpis_formula_tipo_check`, la base de datos no tiene aplicada la migracion de formula personalizada.
+
+Debes ejecutar:
+
+- `docs/custom-formula-migration.sql`
+
+### No puedo borrar un 0 de un input
+
+Ese comportamiento ya fue corregido en los inputs numericos del sistema. Si aun lo ves, recarga la aplicacion.
+
+### Veo letras raras o texto roto
+
+Haz una recarga dura del navegador o reinicia el servidor de desarrollo si acabas de actualizar el proyecto.

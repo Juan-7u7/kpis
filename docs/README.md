@@ -1,49 +1,42 @@
-# 📑 Centro de Documentación Avanzada - Sistema KPI
+# Centro de documentacion
 
-Este es el repositorio central de conocimiento técnico y operativo del Sistema de Monitoreo de KPIs. Aquí se detalla desde la arquitectura de código hasta la lógica matemática detrás de cada indicador.
+Este directorio concentra la documentacion tecnica y operativa del sistema KPI.
 
----
+## Archivos disponibles
 
-## 📂 Contenidos Detallados
+### `frontend.md`
+Explica la arquitectura del frontend, el flujo de filtros, modales, captura dinamica y la experiencia de creacion de KPIs.
 
-### 1. [Arquitectura del Frontend](./frontend.md)
-**Foco:** Interfaz de usuario, Gráficas 3D Isométricas y Estado Dinámico.
-- Gestión de flujos de datos en React 19.
-- Renderizado de alto rendimiento mediante CSS Vanilla.
-- Lógica de formularios dinámicos y feedback visual.
+### `backend.md`
+Describe los endpoints principales, el flujo de guardado, el calculo automatico y la persistencia por tipo de captura.
 
-### 2. [Arquitectura del Backend y Datos](./backend.md)
-**Foco:** API Express, Supabase y Motor de Cálculo.
-- Esquema de base de datos relacional y vistas SQL.
-- Proceso de persistencia granular por tipo de captura.
-- Seguridad, manejo de errores y optimización serverless.
+### `formulas_kpis.md`
+Resume cada tipo de formula soportada, como se calcula y como impacta el semaforo.
 
-### 3. [Lógica Maestra de KPIs y Semáforos](./formulas_kpis.md)
-**Foco:** Algoritmos matemáticos y Reglas de Decisión.
-- Desglose de los 5 modelos de cálculo (Binario, Documental, Eficacia, Eficiencia, Oportunidad).
-- Gestión de umbrales dinámicos y estados de semáforo.
-- Precisiones sobre redondeos y manejo de nulos.
+### `manual_usuario.md`
+Guia paso a paso para usuarios finales: navegar, capturar, crear KPIs y entender resultados.
 
-### 4. [Manual de Usuario Operativo](./manual_usuario.md)
-Guía paso a paso para los usuarios ejecutivos y operativos sobre cómo capturar datos y leer el tablero.
+### `custom-formula-migration.sql`
+Migracion necesaria para bases existentes que quieran habilitar la formula personalizada.
 
-### 5. [Guía de Instalación Local](../README.md)
-Instrucciones detalladas para clonar, configurar variables de entorno y ejecutar el proyecto en tu propia computadora.
-- Interpretación de tableros de control y gráficas de tendencia.
+## Orden recomendado de lectura
 
----
+1. `../README.md`
+2. `manual_usuario.md`
+3. `formulas_kpis.md`
+4. `frontend.md`
+5. `backend.md`
 
-## ⚙️ Especificaciones Técnicas (Stack)
+## Cambio reciente importante
 
-| Tecnología | Rol | Versión |
-| :--- | :--- | :--- |
-| **React** | UI Library | 19.0.0 |
-| **TypeScript** | Lenguaje | 5.x |
-| **Node.js** | Runtime | 20.x |
-| **Supabase** | DB / BaaS | v2 |
-| **Lucide** | Iconografía | v0.4 |
+Se agrego soporte para `formula_personalizada`.
 
----
+Esto implica:
 
-## 🆘 Soporte y Mantenimiento
-Para modificaciones en las reglas de negocio o escalabilidad del sistema, consulte la sección de **"Proceso de Actualización"** dentro del documento de [Lógica de Fórmulas](./formulas_kpis.md).
+- nuevo flujo en el creador de KPIs
+- tutorial visual para orientar al usuario
+- validacion de expresiones matematicas
+- nueva tabla `captura_formula_personalizada`
+- actualizacion de constraints en Supabase
+
+Si el proyecto ya estaba desplegado antes de este cambio, ejecuta `custom-formula-migration.sql` antes de usar la nueva funcionalidad.
