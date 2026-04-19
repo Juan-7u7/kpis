@@ -129,6 +129,27 @@ body {
   height: 400px;
   color: var(--text-muted);
   gap: 1rem;
+  font-size: 1.1rem;
+  text-align: center;
+}
+
+.primary-pulse {
+  background: rgba(59, 130, 246, 0.1) !important;
+  color: var(--accent-color) !important;
+  border-color: rgba(59, 130, 246, 0.3) !important;
+  box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+  animation: pulse-border 2s infinite;
+}
+
+.primary-pulse:hover {
+  background: var(--accent-color) !important;
+  color: white !important;
+}
+
+@keyframes pulse-border {
+  0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
+  70% { box-shadow: 0 0 0 6px rgba(59, 130, 246, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
 }
 
 .spinner {

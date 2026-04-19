@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Save, FileText, CheckCircle, Clock } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 interface CaptureModalProps {
   kpi_id: string;
@@ -79,11 +80,15 @@ export default function CaptureModal({ kpi_id, anio, mes, onClose, onSuccess }: 
         })
       });
       if (res.ok) {
+         toast.success('¡Registro guardado exitosamente!');
          onSuccess();
          onClose();
+      } else {
+         toast.error('Hubo un problema al guardar los datos.');
       }
     } catch (err) {
       console.error(err);
+      toast.error('Ocurrió un error inesperado al conectar con el servidor.');
     } finally {
       setSaving(false);
     }
@@ -170,16 +175,16 @@ export default function CaptureModal({ kpi_id, anio, mes, onClose, onSuccess }: 
                  }]})
                }}>+ Registrar Nueva Entrega</button>
                {formData.entregas?.map((ent: any, i: number) => (
-                 <div key={i} className="form-row" style={{marginBottom: '0.5rem', background: 'rgba(0,0,0,0.2)', padding:'10px', borderRadius:'8px'}}>
+                 <div key={i} className="form-row" style={{marginBottom: '0.5rem', background: '#f8fafc', padding:'10px', borderRadius:'8px', border: '1px solid rgba(0,0,0,0.1)'}}>
                    <div style={{flex: 1}}>
-                     <span style={{fontSize:'0.75rem', color:'#8b9bb4', display:'block', marginBottom:'4px'}}>Solicitado</span>
-                     <input type="date" style={{width:'100%', padding:'0.5rem', borderRadius:'6px', border:'1px solid rgba(255,255,255,0.1)', background:'rgba(0,0,0,0.5)', color:'white'}} value={ent.solicitud} onChange={(e) => {
+                     <span style={{fontSize:'0.75rem', color:'var(--text-muted)', display:'block', marginBottom:'4px', fontWeight:600}}>Solicitado</span>
+                     <input type="date" style={{width:'100%', padding:'0.5rem', borderRadius:'6px', border:'1px solid rgba(0,0,0,0.15)', background:'white', color:'var(--text-main)', outline:'none'}} value={ent.solicitud} onChange={(e) => {
                        const a = [...formData.entregas]; a[i].solicitud = e.target.value; setFormData({...formData, entregas: a});
                      }} />
                    </div>
                    <div style={{flex: 1}}>
-                     <span style={{fontSize:'0.75rem', color:'#8b9bb4', display:'block', marginBottom:'4px'}}>Entregado</span>
-                     <input type="date" style={{width:'100%', padding:'0.5rem', borderRadius:'6px', border:'1px solid rgba(255,255,255,0.1)', background:'rgba(0,0,0,0.5)', color:'white'}} value={ent.entrega} onChange={(e) => {
+                     <span style={{fontSize:'0.75rem', color:'var(--text-muted)', display:'block', marginBottom:'4px', fontWeight:600}}>Entregado</span>
+                     <input type="date" style={{width:'100%', padding:'0.5rem', borderRadius:'6px', border:'1px solid rgba(0,0,0,0.15)', background:'white', color:'var(--text-main)', outline:'none'}} value={ent.entrega} onChange={(e) => {
                        const a = [...formData.entregas]; a[i].entrega = e.target.value; setFormData({...formData, entregas: a});
                      }} />
                    </div>
@@ -192,7 +197,7 @@ export default function CaptureModal({ kpi_id, anio, mes, onClose, onSuccess }: 
             <label>Comentarios / Observaciones (Opcional)</label>
             <textarea 
                rows={3} 
-               style={{ background: 'rgba(0, 0, 0, 0.2)', border: '1px solid rgba(255, 255, 255, 0.1)', padding: '0.75rem 1rem', borderRadius: '8px', color: 'white', fontSize: '0.95rem', width: '100%', resize: 'vertical' }}
+               style={{ width: '100%', resize: 'vertical' }}
                placeholder="Añade algún comentario sobre esta captura..."
                value={comentario}
                onChange={(e) => setComentario(e.target.value)}
