@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, FileText, CheckCircle, Clock, HelpCircle } from 'lucide-react';
+import { X, Save, HelpCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface CaptureModalProps {

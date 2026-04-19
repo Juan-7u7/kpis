@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Activity, Calendar, Filter, Search, Edit3, HelpCircle, Inbox, PlusCircle } from 'lucide-react';
-import { Toaster, toast } from 'react-hot-toast';
+import { BarChart3, Calendar, Filter, Search, Edit3, HelpCircle, Inbox, PlusCircle } from 'lucide-react';
+import { Toaster } from 'react-hot-toast';
 import { driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
 import CaptureModal from './components/CaptureModal';
@@ -146,10 +146,10 @@ function App() {
       <Toaster position="top-center" toastOptions={{ duration: 4000, style: { background: '#333', color: '#fff', borderRadius: '10px' }}} />
       <header className="dashboard-header">
         <div className="header-title" style={{ position: 'relative' }}>
-          <Activity size={32} className="logo-icon" />
+          <BarChart3 size={36} style={{ color: 'var(--accent-color)' }} />
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <h1>Dashboard Operativo</h1>
+              <h1>Kpi's</h1>
               <button 
                 onClick={startTour} 
                 style={{ background: 'var(--accent-color)', color: 'white', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 4px 10px rgba(59, 130, 246, 0.3)'}}
