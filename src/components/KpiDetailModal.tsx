@@ -132,7 +132,7 @@ export default function KpiDetailModal({ kpi, anio, onClose }: KpiDetailModalPro
                     {meta?.formula_tipo === 'cumplidos_programados' && '[ (Cumplidos / Programados) * 100 ]'}
                     {meta?.formula_tipo === 'correctos_total' && '[ (Correctos / Total) * 100 ]'}
                     {meta?.formula_tipo === 'entregas_a_tiempo' && '[ (% Entregas <= 2 días) ]'}
-                    {!['si_no', 'documental_doble', 'cumplidos_programados', 'correctos_total', 'entregas_a_tiempo'].includes(meta?.formula_tipo) && '[ Cálculo Estándar % ]'}
+                    {!['si_no', 'documental_doble', 'cumplidos_programados', 'correctos_total', 'entregas_a_tiempo'].includes(meta?.formula_tipo ?? '') && '[ Cálculo Estándar % ]'}
                  </div>
                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '8px', fontStyle: 'italic' }}>
                     {meta?.formula_descripcion || 'Se evalúa el cumplimiento contra la meta programada.'}
@@ -169,7 +169,7 @@ export default function KpiDetailModal({ kpi, anio, onClose }: KpiDetailModalPro
                  {meta?.formula_tipo === 'cumplidos_programados' && 'Incrementa la eficiencia operativa cumpliendo con el 100% de las actividades programadas en el mes.'}
                  {meta?.formula_tipo === 'documental_doble' && 'Verifica que ambos documentos obligatorios estén correctos y cargados en el sistema para obtener el 100%.'}
                  {meta?.formula_tipo === 'si_no' && 'El cumplimiento es absoluto; asegúrate de realizar la actividad para marcar el SÍ.'}
-                 {!['entregas_a_tiempo', 'cumplidos_programados', 'documental_doble', 'si_no'].includes(meta?.formula_tipo) && 'Revisa los criterios de evaluación del área para asegurar que la captura de datos sea precisa y a tiempo.'}
+                 {!['entregas_a_tiempo', 'cumplidos_programados', 'documental_doble', 'si_no'].includes(meta?.formula_tipo ?? '') && 'Revisa los criterios de evaluación del área para asegurar que la captura de datos sea precisa y a tiempo.'}
                </p>
             </div>
 
