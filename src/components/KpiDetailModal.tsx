@@ -67,6 +67,9 @@ export default function KpiDetailModal({ kpi, anio, onClose }: KpiDetailModalPro
     }
   };
 
+  const latestHistory = history.length > 0 ? history[history.length - 1] : null;
+  const latestProgress = latestHistory ? Math.max(0, Math.min(100, latestHistory.valor)) : 0;
+
   const renderComparison = () => {
     if (history.length < 2) return null;
     const current = history[history.length - 1];
@@ -112,6 +115,52 @@ export default function KpiDetailModal({ kpi, anio, onClose }: KpiDetailModalPro
            <div className="spinner-container" style={{ padding: '4rem 0' }}><div className="spinner"></div></div>
         ) : (
           <div className="detail-body">
+            {latestHistory && (
+              <div className="detail-hero-card">
+                <div
+                  className="detail-hero-donut"
+                  style={{
+                    '--detail-progress': latestProgress,
+                    '--detail-color': getSemaforoColor(latestHistory.semaforo),
+                    '--detail-shadow': `${getSemaforoColor(latestHistory.semaforo)}33`
+                  } as React.CSSProperties}
+                >
+                  <div className="detail-hero-donut__depth"></div>
+                  <div className="detail-hero-donut__ring">
+                    <div className="detail-hero-donut__inner">
+                      <span className="detail-hero-donut__value">{latestHistory.valor}{latestHistory.unidad}</span>
+                      <span className="detail-hero-donut__label">{latestHistory.mes_nombre}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="detail-hero-copy">
+                  <div className="detail-hero-kicker">Resumen del ultimo periodo capturado</div>
+                  <h3>{latestHistory.mes_nombre} {anio}</h3>
+                  <p>
+                    Este donut 3D resume el estado actual del KPI para el ultimo mes con captura registrada.
+                    El color refleja el semaforo y el centro muestra el valor final del periodo.
+                  </p>
+
+                  <div className="detail-hero-stats">
+                    <div className="detail-hero-stat">
+                      <span className="detail-hero-stat__label">Estado</span>
+                      <span className="detail-hero-stat__value" style={{ color: getSemaforoColor(latestHistory.semaforo) }}>
+                        {latestHistory.semaforo.charAt(0).toUpperCase() + latestHistory.semaforo.slice(1)}
+                      </span>
+                    </div>
+                    <div className="detail-hero-stat">
+                      <span className="detail-hero-stat__label">Resultado</span>
+                      <span className="detail-hero-stat__value">{latestHistory.valor}{latestHistory.unidad}</span>
+                    </div>
+                    <div className="detail-hero-stat">
+                      <span className="detail-hero-stat__label">Semaforo verde desde</span>
+                      <span className="detail-hero-stat__value">{meta?.semaforo_verde_min || 100}%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
             
             {/* Metadata Grid */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.25rem', marginBottom: '2rem' }}>

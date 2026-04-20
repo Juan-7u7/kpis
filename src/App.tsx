@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { BarChart3, Calendar, Filter, Search, Edit3, HelpCircle, Inbox, PlusCircle, Trash2 } from 'lucide-react';
 import { Toaster, toast } from 'react-hot-toast';
 import { driver } from 'driver.js';
@@ -37,6 +37,7 @@ const getCurrentPeriod = () => {
 
 function App() {
   const currentPeriod = getCurrentPeriod();
+  const isAdminView = window.location.pathname.replace(/\/+$/, '').toLowerCase().endsWith('/admin');
   const [kpis, setKpis] = useState<KPI[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -126,7 +127,7 @@ function App() {
         toast.error(data.error || 'Error al eliminar');
       }
     } catch {
-      toast.error('Error de conexión al eliminar KPI');
+      toast.error('Error de conexiÃ³n al eliminar KPI');
     } finally {
       setKpiToDelete(null);
     }
@@ -170,21 +171,21 @@ function App() {
     const driverObj = driver({
       showProgress: true,
       nextBtnText: 'Siguiente',
-      prevBtnText: 'Atrás',
+      prevBtnText: 'AtrÃ¡s',
       doneBtnText: 'Terminar',
       popoverClass: 'driverjs-theme',
       steps: [
         { 
           popover: { 
-            title: '<div style="font-size: 1.25rem; color: #3b82f6;">🏢 Bienvenido al Sistema de KPIs</div>', 
-            description: '<div style="text-align:center; padding: 0.5rem 0;"><img src="https://cdn-icons-png.flaticon.com/512/3204/3204094.png" style="width: 70px; margin-bottom: 10px;" /><p style="font-size: 0.95rem; line-height: 1.6; text-align: left;"><b>¿Para qué sirve este panel?</b><br/>Es tu centro de operaciones oficial. Aquí la empresa mide, almacena y evalúa el desempeño de cada métrica clave mensual. <br/><br/><i>Te guiaremos rápidamente sobre cómo utilizarlo.</i></p></div>'
+            title: '<div style="font-size: 1.25rem; color: #3b82f6;">ðŸ¢ Bienvenido al Sistema de KPIs</div>', 
+            description: '<div style="text-align:center; padding: 0.5rem 0;"><img src="https://cdn-icons-png.flaticon.com/512/3204/3204094.png" style="width: 70px; margin-bottom: 10px;" /><p style="font-size: 0.95rem; line-height: 1.6; text-align: left;"><b>Â¿Para quÃ© sirve este panel?</b><br/>Es tu centro de operaciones oficial. AquÃ­ la empresa mide, almacena y evalÃºa el desempeÃ±o de cada mÃ©trica clave mensual. <br/><br/><i>Te guiaremos rÃ¡pidamente sobre cÃ³mo utilizarlo.</i></p></div>'
           }
         },
         { 
           element: '#tour-filters', 
           popover: { 
-            title: '🔍 Control de Tiempo y Área', 
-            description: '<div style="font-size: 0.9rem; line-height: 1.5;"><p>Las metas cambian cada mes. Escoge aquí tu <b>Año</b> y <b>Mes</b> objetivo. <br/><br/>Si el mes no tiene mediciones previas, verás tarjetas vacías en color gris listas para ser llenadas.</p></div>', 
+            title: 'ðŸ” Control de Tiempo y Ãrea', 
+            description: '<div style="font-size: 0.9rem; line-height: 1.5;"><p>Las metas cambian cada mes. Escoge aquÃ­ tu <b>AÃ±o</b> y <b>Mes</b> objetivo. <br/><br/>Si el mes no tiene mediciones previas, verÃ¡s tarjetas vacÃ­as en color gris listas para ser llenadas.</p></div>', 
             side: "bottom", 
             align: 'start' 
           }
@@ -192,8 +193,8 @@ function App() {
         { 
           element: '#tour-kpi-grid', 
           popover: { 
-            title: '📊 Tarjetas de Rendimiento', 
-            description: '<div style="font-size: 0.9rem; line-height: 1.5;"><p>Cada bloque representa un KPI Oficial. En la parte superior derecha ves el tipo de <b>Fórmula</b> (ej. Porcentaje, Documental) y abajo el valor arrojado.</p></div>', 
+            title: 'ðŸ“Š Tarjetas de Rendimiento', 
+            description: '<div style="font-size: 0.9rem; line-height: 1.5;"><p>Cada bloque representa un KPI Oficial. En la parte superior derecha ves el tipo de <b>FÃ³rmula</b> (ej. Porcentaje, Documental) y abajo el valor arrojado.</p></div>', 
             side: "top", 
             align: 'start' 
           }
@@ -201,8 +202,8 @@ function App() {
         { 
           element: '.kpi-status', 
           popover: { 
-            title: '🚥 El Semáforo', 
-            description: '<div style="display: grid; grid-template-columns: 20px 1fr; gap: 8px; font-size: 0.85rem; line-height: 1.4; margin-top: 10px;"><span style="color:#10b981;font-size:18px;">🟢</span><span><b>Sano:</b> Alcanzó o superó la meta definida.</span><span style="color:#f59e0b;font-size:18px;">🟡</span><span><b>Alerta:</b> Métrica por debajo del estándar óptimo.</span><span style="color:#ef4444;font-size:18px;">🔴</span><span><b>Riesgo:</b> Rendimiento inaceptable.</span><span style="color:#94a3b8;font-size:18px;">⚪</span><span><b>Gris:</b> Pendiente de captura este mes.</span></div>', 
+            title: 'ðŸš¥ El SemÃ¡foro', 
+            description: '<div style="display: grid; grid-template-columns: 20px 1fr; gap: 8px; font-size: 0.85rem; line-height: 1.4; margin-top: 10px;"><span style="color:#10b981;font-size:18px;">ðŸŸ¢</span><span><b>Sano:</b> AlcanzÃ³ o superÃ³ la meta definida.</span><span style="color:#f59e0b;font-size:18px;">ðŸŸ¡</span><span><b>Alerta:</b> MÃ©trica por debajo del estÃ¡ndar Ã³ptimo.</span><span style="color:#ef4444;font-size:18px;">ðŸ”´</span><span><b>Riesgo:</b> Rendimiento inaceptable.</span><span style="color:#94a3b8;font-size:18px;">âšª</span><span><b>Gris:</b> Pendiente de captura este mes.</span></div>', 
             side: "top", 
             align: 'start' 
           }
@@ -210,8 +211,8 @@ function App() {
         { 
           element: '.kpi-edit-btn', 
           popover: { 
-            title: '📝 Ingresar o Actualizar Datos', 
-            description: '<div style="font-size: 0.95rem; line-height: 1.5;"><p>Al pulsar <b>Capturar</b>, se abrirá un formulario inteligente.</p><br/><div style="background:rgba(59,130,246,0.1); padding:10px; border-radius:8px; border:1px solid rgba(59,130,246,0.2);">✔️ Si es KPI Documental: palomea casillas.<br/>✔️ Si es KPI Numérico: ingresa cifras exactas.<br/>✔️ Si es Fecha: agrega el calendario de entregas.</div></div>', 
+            title: 'ðŸ“ Ingresar o Actualizar Datos', 
+            description: '<div style="font-size: 0.95rem; line-height: 1.5;"><p>Al pulsar <b>Capturar</b>, se abrirÃ¡ un formulario inteligente.</p><br/><div style="background:rgba(59,130,246,0.1); padding:10px; border-radius:8px; border:1px solid rgba(59,130,246,0.2);">âœ”ï¸ Si es KPI Documental: palomea casillas.<br/>âœ”ï¸ Si es KPI NumÃ©rico: ingresa cifras exactas.<br/>âœ”ï¸ Si es Fecha: agrega el calendario de entregas.</div></div>', 
             side: "bottom", 
             align: 'start' 
           }
@@ -219,21 +220,21 @@ function App() {
         { 
           element: '.kpi-card', 
           popover: { 
-            title: '🧊 Histórico Interactivo 3D', 
-            description: '<div style="font-size: 0.95rem; line-height: 1.5;"><p>Para realizar <b>análisis a largo plazo</b>, simplemente pulsa sobre el <i>fondo de cualquier tarjeta</i>.</p><p style="margin-top: 10px; color: #3b82f6;"><b>¡Magia!</b> ✨ Se desplegará una gráfica en 3D con las alturas proporcionales de todos los meses de este año.</p></div>', 
+            title: 'ðŸ§Š HistÃ³rico Interactivo 3D', 
+            description: '<div style="font-size: 0.95rem; line-height: 1.5;"><p>Para realizar <b>anÃ¡lisis a largo plazo</b>, simplemente pulsa sobre el <i>fondo de cualquier tarjeta</i>.</p><p style="margin-top: 10px; color: #3b82f6;"><b>Â¡Magia!</b> âœ¨ Se desplegarÃ¡ una grÃ¡fica en 3D con las alturas proporcionales de todos los meses de este aÃ±o.</p></div>', 
             side: "right", 
             align: 'start' 
           }
         },
-        { 
+        ...(isAdminView ? [{ 
           element: '.btn-nuevo-kpi', 
           popover: { 
-            title: '✨ Creador de KPIs', 
-            description: '<div style="font-size: 0.95rem; line-height: 1.5;"><p>¿Necesitas medir algo nuevo? Utiliza nuestro <b>asistente inteligente</b>.</p><br/><p>Podrás definir parámetros, elegir cómo se calculará (conteo, verificación documental, fechas límite) y ajustar los umbrales de tu semáforo de manera intuitiva.</p></div>', 
-            side: "bottom", 
-            align: 'start' 
+            title: 'âœ¨ Creador de KPIs', 
+            description: '<div style="font-size: 0.95rem; line-height: 1.5;"><p>Â¿Necesitas medir algo nuevo? Utiliza nuestro <b>asistente inteligente</b>.</p><br/><p>PodrÃ¡s definir parÃ¡metros, elegir cÃ³mo se calcularÃ¡ (conteo, verificaciÃ³n documental, fechas lÃ­mite) y ajustar los umbrales de tu semÃ¡foro de manera intuitiva.</p></div>', 
+            side: 'bottom' as const, 
+            align: 'start' as const 
           }
-        }
+        }] : [])
       ]
     });
 
@@ -256,13 +257,15 @@ function App() {
               >
                 <HelpCircle size={18} />
               </button>
-              <button
-                onClick={() => setShowCreateKpi(true)}
-                className="btn-nuevo-kpi"
-                data-tooltip="Crear nuevo KPI personalizado"
-              >
-                <PlusCircle size={16} /> Nuevo KPI
-              </button>
+              {isAdminView && (
+                <button
+                  onClick={() => setShowCreateKpi(true)}
+                  className="btn-nuevo-kpi"
+                  data-tooltip="Crear nuevo KPI personalizado"
+                >
+                  <PlusCircle size={16} /> Nuevo KPI
+                </button>
+              )}
             </div>
             <p className="subtitle">Monitoreo inteligente de indicadores clave</p>
           </div>
@@ -270,7 +273,7 @@ function App() {
         
         <div className="header-filters" id="tour-filters">
           <div className="filter-group global-search">
-             <span className="filter-label"><Search size={14} /> BÚSQUEDA</span>
+             <span className="filter-label"><Search size={14} /> BÃšSQUEDA</span>
              <div style={{ position: 'relative' }}>
                <Search size={16} className="search-icon" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-gris-claro)' }} />
                <input 
@@ -284,9 +287,9 @@ function App() {
           </div>
           
           <div className="filter-group">
-            <span className="filter-label"><Filter size={14} /> ÁREA</span>
+            <span className="filter-label"><Filter size={14} /> ÃREA</span>
             <select value={selectedArea} onChange={(e) => setSelectedArea(e.target.value)}>
-              <option value="Todas">Todas las áreas</option>
+              <option value="Todas">Todas las Ã¡reas</option>
               {areasList.map(a => <option key={a as string} value={a as string}>{a}</option>)}
             </select>
           </div>
@@ -332,7 +335,7 @@ function App() {
         {loading && (
            <div className="empty-state">
               <div className="spinner"></div>
-              <p>Cargando información del tablero...</p>
+              <p>Cargando informaciÃ³n del tablero...</p>
            </div>
         )}
         
@@ -345,7 +348,7 @@ function App() {
         {!loading && !error && Object.keys(groupedKpis).length === 0 && (
            <div className="empty-state">
               <Inbox size={48} style={{ color: 'var(--text-muted)', opacity: 0.5 }} />
-              <p>No se encontraron KPIs con los parámetros seleccionados.</p>
+              <p>No se encontraron KPIs con los parÃ¡metros seleccionados.</p>
            </div>
         )}
 
@@ -369,10 +372,10 @@ function App() {
                       className="kpi-info-icon" 
                       onClick={(e) => {
                         e.stopPropagation();
-                        // Abrimos el modal detallado que ya tiene la lógica de ayuda
+                        // Abrimos el modal detallado que ya tiene la lÃ³gica de ayuda
                         setKpiForHistory(kpi);
                       }}
-                      data-tooltip="Métrica e Historial"
+                      data-tooltip="MÃ©trica e Historial"
                       style={{ background: 'none', border: 'none', padding: '4px', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center' }}
                     >
                       <HelpCircle size={14} />
@@ -395,7 +398,7 @@ function App() {
                   </div>
 
                   <div className="kpi-card-footer" style={{ marginTop: 'auto', paddingTop: '1.5rem', width: '100%' }}>
-                    {/* Caso: Gráfica Circular (Para Porcentajes y Binarios) */}
+                    {/* Caso: GrÃ¡fica Circular (Para Porcentajes y Binarios) */}
                     {(kpi.tipo_resultado === 'porcentaje' || kpi.tipo_resultado === 'binario') ? (
                       <div className="kpi-donut-container">
                         <div className="radial-progress-wrapper">
@@ -421,7 +424,7 @@ function App() {
                         </div>
                       </div>
                     ) : (
-                      /* Caso: Gráfica Lineal (Para Conteo, Montos, Promedios) */
+                      /* Caso: GrÃ¡fica Lineal (Para Conteo, Montos, Promedios) */
                       <div style={{ width: '100%' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
                           <div className="kpi-result">
@@ -482,9 +485,9 @@ function App() {
           title="Eliminar KPI Personalizado"
           message={
             <>
-              ¿Estás seguro de que deseas eliminar permanentemente el KPI <strong style={{ color: '#0f172a' }}>"{kpiToDelete.kpi_nombre}"</strong>?
+              Â¿EstÃ¡s seguro de que deseas eliminar permanentemente el KPI <strong style={{ color: '#0f172a' }}>"{kpiToDelete.kpi_nombre}"</strong>?
               <br/><br/>
-              Esta acción es irreversible y eliminará todo su historial de capturas.
+              Esta acciÃ³n es irreversible y eliminarÃ¡ todo su historial de capturas.
             </>
           }
           onConfirm={confirmDeleteKpi}
@@ -496,3 +499,4 @@ function App() {
 }
 
 export default App;
+
