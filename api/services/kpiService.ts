@@ -1,18 +1,144 @@
 import { validateCustomFormula } from '../../src/lib/customFormula.js';
 import { supabase } from '../../src/lib/supabase.js';
 import type {
+  AreaRecord,
+  CreateAreaBody,
+  CreateEmpresaBody,
   CreateKpiBody,
+  EmpresaRecord,
   KPIBase,
   KpiHistoryRecord,
-  KPIResultRecord
+  KPIResultRecord,
+  UpdateAreaBody,
+  UpdateEmpresaBody
 } from '../types/kpi.js';
 
-export const getKpisByPeriod = async (anio: string, mes: string) => {
+const slugify = (value: string) =>
+  value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .replace(/-{2,}/g, '-');
+
+export const getEmpresas = async () => {
+  const { data, error } = await supabase
+    .from('empresas')
+    .select('id, nombre, slug, descripcion, activo')
+    .eq('activo', true)
+    .order('nombre');
+
+  if (error) throw error;
+  return (data as EmpresaRecord[] | null) ?? [];
+};
+
+export const createEmpresa = async (body: CreateEmpresaBody) => {
+  const nombre = body.nombre?.trim();
+  const descripcion = body.descripcion?.trim() || null;
+
+  if (!nombre) {
+    throw new Error('El nombre de la empresa es obligatorio.');
+  }
+
+  const slugBase = slugify(nombre);
+  if (!slugBase) {
+    throw new Error('No se pudo generar un identificador válido para la empresa.');
+  }
+
+  const { data: existingEmpresa, error: existingError } = await supabase
+    .from('empresas')
+    .select('id')
+    .eq('slug', slugBase)
+    .maybeSingle();
+
+  if (existingError) throw existingError;
+  if (existingEmpresa) {
+    throw new Error('Ya existe una empresa con ese nombre.');
+  }
+
+  const { data, error } = await supabase
+    .from('empresas')
+    .insert({
+      nombre,
+      slug: slugBase,
+      descripcion,
+      activo: true
+    })
+    .select('id, nombre, slug, activo')
+    .single();
+
+  if (error) throw error;
+  return data as EmpresaRecord;
+};
+
+export const updateEmpresa = async (body: UpdateEmpresaBody) => {
+  const id = body.id?.trim();
+  const nombre = body.nombre?.trim();
+  const descripcion = body.descripcion?.trim() || null;
+
+  if (!id || !nombre) {
+    throw new Error('id y nombre son obligatorios.');
+  }
+
+  const slug = slugify(nombre);
+  if (!slug) {
+    throw new Error('No se pudo generar un identificador válido para la empresa.');
+  }
+
+  const { data: existingEmpresa, error: existingError } = await supabase
+    .from('empresas')
+    .select('id')
+    .eq('slug', slug)
+    .neq('id', id)
+    .maybeSingle();
+
+  if (existingError) throw existingError;
+  if (existingEmpresa) {
+    throw new Error('Ya existe otra empresa con ese nombre.');
+  }
+
+  const { data, error } = await supabase
+    .from('empresas')
+    .update({
+      nombre,
+      slug,
+      descripcion
+    })
+    .eq('id', id)
+    .select('id, nombre, slug, descripcion, activo')
+    .single();
+
+  if (error) throw error;
+  return data as EmpresaRecord;
+};
+
+export const deactivateEmpresa = async (empresaId: string) => {
+  const { count: activeCompanies, error: countError } = await supabase
+    .from('empresas')
+    .select('id', { count: 'exact', head: true })
+    .eq('activo', true);
+
+  if (countError) throw countError;
+  if ((activeCompanies ?? 0) <= 1) {
+    throw new Error('No puedes desactivar la única empresa activa del sistema.');
+  }
+
+  const { error } = await supabase
+    .from('empresas')
+    .update({ activo: false })
+    .eq('id', empresaId);
+
+  if (error) throw error;
+};
+
+export const getKpisByPeriod = async (empresaId: string, anio: string, mes: string) => {
   const { data: kpisData, error: kpisError } = await supabase
     .from('kpis')
     .select(
       `
         id,
+        empresa_id,
         nombre,
         formula_tipo,
         tipo_resultado,
@@ -20,6 +146,7 @@ export const getKpisByPeriod = async (anio: string, mes: string) => {
         areas(id, nombre)
       `
     )
+    .eq('empresa_id', empresaId)
     .eq('activo', true);
 
   if (kpisError) throw kpisError;
@@ -37,6 +164,12 @@ export const getKpisByPeriod = async (anio: string, mes: string) => {
         periodos!inner(anio, mes, nombre)
       `
     )
+    .in(
+      'kpi_id',
+      ((kpisData as unknown as KPIBase[] | null) ?? []).map((kpi) => kpi.id).length > 0
+        ? ((kpisData as unknown as KPIBase[]) ?? []).map((kpi) => kpi.id)
+        : ['00000000-0000-0000-0000-000000000000']
+    )
     .eq('periodos.anio', anio)
     .eq('periodos.mes', mes);
 
@@ -46,11 +179,12 @@ export const getKpisByPeriod = async (anio: string, mes: string) => {
     const resultado = (resultsData as unknown as KPIResultRecord[] | null)?.find(
       (result) => result.kpi_id === kpi.id
     );
+    const area = Array.isArray(kpi.areas) ? kpi.areas[0] : kpi.areas;
 
     return {
       kpi_id: kpi.id,
       resultado_id: resultado ? resultado.id : null,
-      area: kpi.areas?.nombre || 'General',
+      area: area?.nombre || 'General',
       kpi_nombre: kpi.nombre,
       formula_tipo: kpi.formula_tipo,
       tipo_resultado: kpi.tipo_resultado,
@@ -86,7 +220,7 @@ export const getKpiHistory = async (kpiId: string, anio?: string) => {
   const { data: meta, error: metaErr } = await supabase
     .from('v_kpis_detalle')
     .select(
-      'kpi_nombre, area_nombre, meta_descripcion, formula_descripcion, formula_tipo, semaforo_verde_min, semaforo_amarillo_min'
+      'kpi_nombre, area_nombre, meta_descripcion, formula_descripcion, formula_tipo, semaforo_verde_min, semaforo_amarillo_min, config_json'
     )
     .eq('kpi_id', kpiId)
     .single();
@@ -133,24 +267,119 @@ export const getKpiHistory = async (kpiId: string, anio?: string) => {
     })
     .sort((a, b) => (a.mes || 0) - (b.mes || 0));
 
-  return { meta, historico };
+  const metaFinal = meta ? {
+    ...meta,
+    ...(meta.config_json || {})
+  } : null;
+
+  return { meta: metaFinal, historico };
 };
 
-export const getAreas = async () => {
-  const { data, error } = await supabase
+export const getAreas = async (empresaId?: string) => {
+  let query = supabase
     .from('areas')
     .select('id, nombre')
     .eq('activo', true)
     .order('nombre');
 
+  if (empresaId) {
+    query = query.eq('empresa_id', empresaId);
+  }
+
+  const { data, error } = await query;
+
   if (error) throw error;
   return data;
 };
 
-export const getNextKpiOrder = async () => {
+export const createArea = async (body: CreateAreaBody) => {
+  const empresaId = body.empresa_id?.trim();
+  const nombre = body.nombre?.trim();
+  const descripcion = body.descripcion?.trim() || null;
+
+  if (!empresaId || !nombre) {
+    throw new Error('empresa_id y nombre son obligatorios.');
+  }
+
+  const { data: existingArea, error: existingAreaError } = await supabase
+    .from('areas')
+    .select('id')
+    .eq('empresa_id', empresaId)
+    .eq('nombre', nombre)
+    .maybeSingle();
+
+  if (existingAreaError) throw existingAreaError;
+  if (existingArea) {
+    throw new Error('Ya existe un área con ese nombre en esta empresa.');
+  }
+
+  const { data, error } = await supabase
+    .from('areas')
+    .insert({
+      empresa_id: empresaId,
+      nombre,
+      descripcion,
+      activo: true
+    })
+    .select('id, nombre, empresa_id, activo')
+    .single();
+
+  if (error) throw error;
+  return data as AreaRecord;
+};
+
+export const updateArea = async (body: UpdateAreaBody) => {
+  const id = body.id?.trim();
+  const empresaId = body.empresa_id?.trim();
+  const nombre = body.nombre?.trim();
+  const descripcion = body.descripcion?.trim() || null;
+
+  if (!id || !empresaId || !nombre) {
+    throw new Error('id, empresa_id y nombre son obligatorios.');
+  }
+
+  const { data: existingArea, error: existingAreaError } = await supabase
+    .from('areas')
+    .select('id')
+    .eq('empresa_id', empresaId)
+    .eq('nombre', nombre)
+    .neq('id', id)
+    .maybeSingle();
+
+  if (existingAreaError) throw existingAreaError;
+  if (existingArea) {
+    throw new Error('Ya existe otra área con ese nombre en esta empresa.');
+  }
+
+  const { data, error } = await supabase
+    .from('areas')
+    .update({
+      nombre,
+      descripcion
+    })
+    .eq('id', id)
+    .eq('empresa_id', empresaId)
+    .select('id, nombre, descripcion, empresa_id, activo')
+    .single();
+
+  if (error) throw error;
+  return data as AreaRecord;
+};
+
+export const deactivateArea = async (areaId: string) => {
+  const { error } = await supabase
+    .from('areas')
+    .update({ activo: false })
+    .eq('id', areaId);
+
+  if (error) throw error;
+};
+
+export const getNextKpiOrder = async (empresaId: string) => {
   const { data, error } = await supabase
     .from('kpis')
     .select('orden_visual')
+    .eq('empresa_id', empresaId)
     .order('orden_visual', { ascending: false })
     .limit(1);
 
@@ -160,6 +389,7 @@ export const getNextKpiOrder = async () => {
 
 export const createKpi = async (body: CreateKpiBody) => {
   const {
+    empresa_id,
     nombre,
     area_id,
     meta_descripcion,
@@ -172,10 +402,16 @@ export const createKpi = async (body: CreateKpiBody) => {
     permite_multiple_evento_mes,
     campos_documentales,
     formula_personalizada,
-    guia
+    guia,
+    objetivo,
+    definicion,
+    medicion,
+    sentido,
+    fuente_datos,
+    fecha_entrega_info
   } = body;
 
-  if (!nombre || !area_id || !meta_descripcion || !formula_tipo || !tipo_captura || !tipo_resultado) {
+  if (!empresa_id || !nombre || !meta_descripcion || !formula_tipo || !tipo_captura || !tipo_resultado) {
     throw new Error('Faltan campos requeridos.');
   }
 
@@ -189,13 +425,14 @@ export const createKpi = async (body: CreateKpiBody) => {
     }
   }
 
-  const nextOrder = await getNextKpiOrder();
+  const nextOrder = await getNextKpiOrder(empresa_id);
 
   const { data: newKpi, error: kpiError } = await supabase
     .from('kpis')
     .insert({
+      empresa_id,
       nombre,
-      area_id,
+      area_id: area_id || null,
       meta_descripcion,
       descripcion: meta_descripcion,
       formula_tipo,
@@ -247,6 +484,13 @@ export const createKpi = async (body: CreateKpiBody) => {
   }
 
   if (guia) configJson.guia = guia;
+  if (objetivo) configJson.objetivo = objetivo;
+  if (definicion) configJson.definicion = definicion;
+  if (medicion) configJson.medicion = medicion;
+  if (sentido) configJson.sentido = sentido;
+  else configJson.sentido = 'higher_is_better';
+  if (fuente_datos) configJson.fuente_datos = fuente_datos;
+  if (fecha_entrega_info) configJson.fecha_entrega_info = fecha_entrega_info;
 
   const { error: configError } = await supabase.from('kpi_config').insert({
     kpi_id: newKpi.id,

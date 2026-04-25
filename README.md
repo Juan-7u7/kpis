@@ -1,48 +1,288 @@
-﻿# Sistema de Gestion de KPIs
+# Sistema de Gestión de KPIs
 
-Repositorio del tablero de KPIs con frontend en React, backend en Express y base de datos en Supabase.
+Repositorio del tablero de KPIs con frontend en React, backend en Express y persistencia en Supabase.
 
-## Que incluye hoy
+Este README ya no solo describe el producto: también funciona como documento de continuidad para que otro agente o desarrollador pueda retomar el proyecto con contexto suficiente.
 
-- tablero con filtros por mes, anio, area y busqueda
-- captura dinamica por tipo de KPI
-- calculo automatico de resultados y semaforo
-- creacion de KPIs desde la interfaz
-- formulas predeterminadas y formula personalizada
-- historico por KPI y detalle mensual
+## Estado actual
 
-## Requisitos
+El proyecto ya dejó de ser solo un sistema de KPIs "globales" y ahora va encaminado a un modelo multiempresa.
 
-- Node.js 18 o superior
-- npm
-- una cuenta de Supabase
+Hoy ya existe soporte base para:
 
-## Instalacion local
+- selector de empresa en frontend
+- empresas en base de datos
+- áreas por empresa
+- KPIs por empresa
+- trabajadores por empresa
+- asignación trabajador -> áreas
+- asignación trabajador -> KPIs
+- KPI con área opcional
+- motor de KPI personalizado apoyado en `kpi_config.config_json`
 
-### 1. Clonar el repositorio
+## Stack
+
+- Frontend: React + Vite + TypeScript
+- Backend: Express + TypeScript
+- Base de datos: Supabase / PostgreSQL
+
+## Estructura importante
+
+- `src/App.tsx`
+  Tablero principal, selector de empresa y panel administrativo básico.
+- `src/components/CreateKpiModal.tsx`
+  Flujo para alta de KPI personalizado.
+- `src/components/CreateEmpresaModal.tsx`
+  Alta de empresas.
+- `src/components/CreateAreaModal.tsx`
+  Alta de áreas por empresa.
+- `src/components/CreateWorkerModal.tsx`
+  Alta de trabajadores con `nombre`, `email`, `empresa`.
+- `src/components/WorkerAssignmentsModal.tsx`
+  Asignación de áreas y KPIs a trabajadores.
+- `api/routes/kpiRoutes.ts`
+  Endpoints de empresas, áreas, KPIs y consultas principales.
+- `api/routes/profileRoutes.ts`
+  Endpoints de trabajadores y asignaciones.
+- `api/services/kpiService.ts`
+  Lógica principal de empresas, áreas y KPIs.
+- `api/services/profileService.ts`
+  Lógica de trabajadores y asignaciones.
+- `src/lib/customFormula.ts`
+  Validación de fórmula personalizada.
+
+## Decisiones funcionales ya tomadas
+
+Estas decisiones ya fueron acordadas y el siguiente trabajo debe respetarlas:
+
+- una empresa tiene muchas áreas
+- una empresa tiene muchos trabajadores
+- una empresa tiene muchos KPIs
+- un trabajador pertenece a una sola empresa
+- un trabajador puede existir sin área al inicio
+- un trabajador puede estar en varias áreas
+- un trabajador puede estar en varios KPIs
+- un KPI pertenece a una empresa
+- el área del KPI es opcional
+- un KPI puede tener varios trabajadores asignados
+- solo existe un administrador del sistema
+- no se implementara por ahora un sistema complejo de roles y privilegios
+- el alta inicial de trabajador solo guarda:
+  - `nombre`
+  - `email`
+  - `empresa`
+- el motor de KPI personalizado se sigue guardando en `kpi_config.config_json`
+- el email en `profiles` sigue siendo unico global
+- la unicidad de KPIs quedó pensada por `empresa + área + nombre`, con manejo especial cuando `area_id` es `null`
+
+## Fases completadas
+
+### Fase 1. Definición funcional mínima
+
+Quedó cerrada la regla de negocio base para multiempresa, trabajadores, áreas, KPIs y asignaciones.
+
+### Fase 2. Levantamiento del esquema actual
+
+Se revisó la estructura existente en Supabase y se confirmó que el sistema original estaba pensado para una sola organización global:
+
+- `areas` globales
+- `kpis` con `area_id` obligatorio
+- `profiles` sin `empresa_id`
+- `v_kpis_detalle` con `JOIN` duro a `areas`
+
+### Fase 3A. Rediseño base multiempresa en BD
+
+Esto ya se ejecutó en Supabase:
+
+- creación de tabla `empresas`
+- `empresa_id` agregado a `áreas`
+- `empresa_id` agregado a `profiles`
+- `empresa_id` agregado a `kpis`
+- `kpis.area_id` ahora permite `null`
+- creación de `profile_areas`
+- creación de `profile_kpis`
+- ajuste de indices y unicidades
+- recreación de `v_kpis_detalle` con `LEFT JOIN`
+
+### Fase 3B. Migración inicial de datos
+
+Ya se migró el estado anterior a una empresa base:
+
+- empresa base creada con slug `empresa-base`
+- todas las áreas existentes quedaron ligadas a esa empresa
+- todos los profiles existentes quedaron ligados a esa empresa
+- todos los KPIs existentes quedaron ligados a esa empresa
+- `empresa_id` ya es `NOT NULL` en `areas`, `profiles` y `kpis`
+
+Referencia útil de la migración:
+
+- empresa base actual:
+  - `id = 3d638928-6c4f-4440-9cce-53cb45b63556`
+  - `slug = empresa-base`
+
+### Fase 4. Modularización técnica del backend
+
+Ya no todo vive en un solo archivo. Se modularizó el backend en:
+
+- `api/app.ts`
+- `api/routes/*`
+- `api/services/*`
+- `api/types/*`
+- `api/utils/asyncHandler.ts`
+
+También se eliminó duplicidad del cliente Supabase en frontend.
+
+### Fase 5. Soporte multiempresa operativo en backend
+
+Ya existe:
+
+- `GET /api/empresas`
+- `POST /api/empresas/create`
+- `GET /api/áreas`
+- `GET /api/empresas/:empresa_id/áreas`
+- `POST /api/áreas/create`
+- `GET /api/kpis?empresa_id=...&año=...&mes=...`
+- `POST /api/kpis/create`
+- `GET /api/empresas/:empresa_id/profiles`
+- `POST /api/profiles/create`
+- `GET /api/profiles/:profile_id/áreas`
+- `POST /api/profiles/:profile_id/áreas`
+- `GET /api/profiles/:profile_id/kpis`
+- `POST /api/profiles/:profile_id/kpis`
+
+### Fase 6. Frontend multiempresa mínimo
+
+Ya esta implementado:
+
+- selector de empresa en el dashboard
+- carga de KPIs por empresa
+- alta de empresas desde UI
+- alta de áreas por empresa desde UI
+- alta de trabajadores desde UI
+- asignación de áreas y KPIs a trabajadores desde UI
+- alta de KPI usando `empresaId`
+- área opcional al crear KPI
+
+### Fase 7. Verificación técnica de esta etapa
+
+La última validación conocida quedó pasando:
 
 ```bash
-git clone https://github.com/Juan-7u7/kpis.git
-cd kpis
+npx tsc -b
+npx eslint api src --ext .ts,.tsx
 ```
 
-### 2. Instalar dependencias
+### Fase 8. Administración CRUD completa
+
+Se cerró la administración básica de la plataforma:
+- Edición de empresas, áreas y trabajadores desde la UI.
+- Desactivación (borrado lógico) de empresas, áreas y trabajadores con confirmación.
+- Los modales ahora soportan modo creación y edición dinámicamente.
+- Integración completa en el panel administrativo de App.tsx.
+
+### Fase 9. Fortalecimiento del motor de KPI personalizado
+
+Se robusteció la definición y visualización de indicadores:
+- Campos de negocio formalizados: Objetivo, Definición Técnica, Método de Medición, Fuente de Datos y Frecuencia.
+- Soporte para sentido del KPI: Ascendente (mayor es mejor) y Descendente (menor es mejor).
+- El semáforo ahora se adapta automáticamente según el sentido elegido.
+- Visualización detallada en el KpiDetailModal incluyendo fichas técnicas.
+- Mejora de UX en el asistente de creación (Wizard).
+
+### Fase 10. Datos reales en filtros y estados vacíos
+
+Se desacoplaron los filtros de los datos derivados:
+- El filtro de áreas ahora utiliza la tabla maestra de `areas` de la empresa.
+- El tablero agrupa KPIs por todas las áreas existentes, incluso si no tienen indicadores (mostrando estado vacío).
+- Se implementó un grupo "General" para KPIs huérfanos de área.
+- Mejora de estados vacíos en el Dashboard con botones de acción rápida para administradores.
+- Manejo robusto de empresas recién creadas (sin áreas ni trabajadores).
+
+### Fase 11. Seguridad básica
+
+Se protegió el acceso al panel administrativo:
+- Implementación de una pantalla de login para la ruta `/admin`.
+- Uso de `localStorage` para persistir la sesión administrativa.
+- Botón de "Cerrar Sesión" integrado en la cabecera principal.
+- Contraseña configurada inicialmente como `admin123`.
+
+### Fase 12. Limpieza de textos y encoding
+
+Objetivo cumplido:
+- Se eliminó el mojibake (caracteres corruptos) en `App.tsx` y otros componentes.
+- Se corrigieron acentos y ortografía en toda la interfaz de usuario (modales, tours, mensajes).
+- Se revisó y saneó el archivo `README.md` con la codificación correcta.
+
+## Fases faltantes
+
+Estas son las siguientes fases recomendadas para otro agente. Están ordenadas por prioridad práctica.
+
+
+Objetivo:
+aislar datos por empresa sin meter un sistema complejo de roles.
+
+Pendiente:
+
+- revisar políticas RLS en Supabase
+- definir si el admin único entra con usuario fijo o por autenticación real
+- evitar consultas cruzadas entre empresas
+- validar en backend que:
+  - trabajador y area pertenezcan a la misma empresa
+  - trabajador y KPI pertenezcan a la misma empresa
+  - area y KPI pertenezcan a la misma empresa cuando aplique
+
+Nota:
+
+- el proyecto intencionalmente no implementa varios roles por ahora
+- eso no elimina la necesidad de aislamiento por empresa
+
+### Fase 13. Prueba funcional con empresas reales
+
+Objetivo:
+validar que el modelo soporte escenarios tipo TODITO / CNCI.
+
+Pendiente:
+
+- crear al menos 2 empresas reales de prueba
+- crear areas distintas por empresa
+- crear trabajadores distintos por empresa
+- crear KPIs distintos por empresa
+- asignar trabajadores a areas y KPIs
+- verificar que no se mezclen datos entre empresas
+- probar fórmulas personalizadas reales
+
+## Riesgos conocidos
+
+- el frontend ya soporta varias operaciones admin, pero la experiencia aún no está pulida
+- no hay aislamiento de seguridad real todavia
+- hay que revisar si algunos endpoints necesitan validaciones cruzadas de empresa mas estrictas
+- el motor personalizado sigue flexible, pero todavía no está modelado con toda la riqueza funcional de los archivos de TODITO/CNCI
+
+## Recomendaciones para el siguiente agente
+
+Si otro agente retoma desde aqui, el orden mas sano es:
+
+1. revisar este README completo
+2. correr validación local
+3. probar el flujo UI actual
+4. atacar primero CRUD faltante
+5. luego reforzar validaciones multiempresa
+6. despues mejorar el motor de KPI personalizado
+7. al final limpiar encoding y UX
+
+## Comandos útiles
 
 ```bash
 npm install
+npm run dev
+npm run server
+npx tsc -b
+npx eslint api src --ext .ts,.tsx
 ```
 
-### 3. Configurar Supabase
+## Configuración local
 
-1. Crea un proyecto en Supabase.
-2. Abre `SQL Editor`.
-3. Ejecuta `bd.sql` para crear la estructura base.
-4. Ejecuta `seed.sql` si quieres cargar datos base de ejemplo.
-5. Si ya tenias una base anterior y quieres usar formula personalizada, ejecuta tambien `docs/custom-formula-migration.sql`.
-
-## Variables de entorno
-
-Crea un archivo `.env` en la raiz:
+Crea un archivo `.env` en la raíz:
 
 ```env
 VITE_SUPABASE_URL=https://tu-proyecto.supabase.co
@@ -52,60 +292,12 @@ SUPABASE_URL=https://tu-proyecto.supabase.co
 SUPABASE_ANON_KEY=tu-clave-anon
 ```
 
-## Ejecucion
+## SQL histórico relevante
 
-### Frontend + backend de desarrollo
+Si se levanta una base nueva desde cero, revisar:
 
-```bash
-npm run dev
-```
-
-### Solo backend
-
-```bash
-npm run server
-```
-
-## Formula personalizada
-
-El sistema ya permite crear KPIs personalizados desde la UI.
-
-### Lo que hace
-
-- permite definir variables propias para la captura mensual
-- permite usar plantillas de calculo o escribir una formula libre
-- valida que la formula solo use variables existentes
-- guarda la configuracion en `config_json.custom_formula`
-- captura los valores en la tabla `captura_formula_personalizada`
-
-### Requisito importante
-
-Si tu base fue creada antes de esta funcionalidad, debes ejecutar:
-
+- `bd.sql`
+- `seed.sql`
 - `docs/custom-formula-migration.sql`
 
-Si no lo haces, al crear un KPI personalizado Supabase devolvera errores de constraints como `kpis_formula_tipo_check`.
-
-## Documentacion
-
-- `docs/README.md`: indice general de documentacion
-- `docs/frontend.md`: arquitectura frontend y experiencia de usuario
-- `docs/backend.md`: backend, API y persistencia
-- `docs/formulas_kpis.md`: formulas, semaforo y reglas de negocio
-- `docs/manual_usuario.md`: guia operativa para usuarios finales
-
-## Comandos utiles
-
-```bash
-npm run dev
-npm run server
-npx tsc -b
-npm run build
-```
-
-## Notas de mantenimiento
-
-- el periodo por defecto toma el mes y anio actuales del sistema
-- los inputs numericos permiten quedar vacios mientras el usuario escribe
-- `documental_doble` muestra 2 documentos y su progreso de forma mas intuitiva
-- la seccion de formula personalizada incluye un tutorial visual dentro del flujo de creacion
+Si se va a continuar sobre la BD ya migrada en Supabase, no repetir a ciegas los cambios multiempresa sin revisar el estado actual primero.

@@ -2,6 +2,7 @@ import express, { type NextFunction, type Request, type Response } from 'express
 import cors from 'cors';
 import captureRoutes from './routes/captureRoutes.js';
 import kpiRoutes from './routes/kpiRoutes.js';
+import profileRoutes from './routes/profileRoutes.js';
 
 const app = express();
 
@@ -10,6 +11,7 @@ app.use(express.json());
 
 app.use('/api', kpiRoutes);
 app.use('/api', captureRoutes);
+app.use('/api', profileRoutes);
 
 app.use((err: unknown, _req: Request, res: Response, next: NextFunction) => {
   void next;

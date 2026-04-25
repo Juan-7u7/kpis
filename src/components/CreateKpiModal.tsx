@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, ChevronRight, ChevronLeft, Check, BarChart3, FileText, Hash, Clock, ToggleLeft, Sigma, Plus, Trash2, BookOpen, Lightbulb, Calculator, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { normalizeFormulaKey, validateCustomFormula, type CustomFormulaVariable } from '../lib/customFormula';
@@ -9,6 +9,7 @@ interface Area {
 }
 
 interface CreateKpiModalProps {
+  empresaId: string;
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -39,7 +40,7 @@ const FORMULA_OPTIONS: FormulaOption[] = [
     tipo_captura: 'binario_documental',
     tipo_resultado: 'porcentaje',
     icon: <ToggleLeft size={22} />,
-    example: 'Ejemplos: Entrega de reportes, confirmacion de proveedor, envio de acuse.'
+    example: 'Ejemplos: Entrega de reportes, confirmación de proveedor, envío de acuse.'
   },
   {
     value: 'documental_doble',
@@ -48,7 +49,7 @@ const FORMULA_OPTIONS: FormulaOption[] = [
     tipo_captura: 'binario_documental',
     tipo_resultado: 'porcentaje',
     icon: <FileText size={22} />,
-    example: 'Ejemplos: Presupuesto + Plan de trabajo, Analisis + Informe.'
+    example: 'Ejemplos: Presupuesto + Plan de trabajo, Análisis + Informe.'
   },
   {
     value: 'cumplidos_programados',
@@ -70,8 +71,8 @@ const FORMULA_OPTIONS: FormulaOption[] = [
   },
   {
     value: 'entregas_a_tiempo',
-    label: 'Entregas en Tiempo (dias)',
-    description: '(Entregas realizadas en N dias o menos / Total de entregas) x 100.',
+    label: 'Entregas en Tiempo (días)',
+    description: '(Entregas realizadas en N días o menos / Total de entregas) x 100.',
     tipo_captura: 'fechas',
     tipo_resultado: 'dias_y_porcentaje',
     icon: <Clock size={22} />,
@@ -79,8 +80,8 @@ const FORMULA_OPTIONS: FormulaOption[] = [
   },
   {
     value: 'formula_personalizada',
-    label: 'Formula Personalizada',
-    description: 'Define variables propias y una regla matematica creada desde cero.',
+    label: 'Fórmula Personalizada',
+    description: 'Define variables propias y una regla matemática creada desde cero.',
     tipo_captura: 'formula_personalizada',
     tipo_resultado: 'porcentaje',
     icon: <Sigma size={22} />,
@@ -88,7 +89,7 @@ const FORMULA_OPTIONS: FormulaOption[] = [
   }
 ];
 
-const STEPS = ['Informacion', 'Formula', 'Semaforo', 'Confirmar'];
+const STEPS = ['Información', 'Fórmula', 'Semáforo', 'Confirmar'];
 
 const parseNumericInput = (value: string, fallback: number) => {
   if (value.trim() === '') return fallback;
@@ -127,7 +128,7 @@ const CUSTOM_TEMPLATE_OPTIONS: { value: CustomTemplateType; label: string; descr
   },
   {
     value: 'manual',
-    label: 'Formula libre',
+    label: 'Fórmula libre',
     description: 'Escribir la regla manualmente'
   }
 ];
@@ -154,7 +155,7 @@ const buildExpressionFromTemplate = (template: CustomTemplateType, variables: Cu
   }
 };
 
-export default function CreateKpiModal({ onClose, onSuccess }: CreateKpiModalProps) {
+export default function CreateKpiModal({ empresaId, onClose, onSuccess }: CreateKpiModalProps) {
   const [step, setStep] = useState(0);
   const [areas, setAreas] = useState<Area[]>([]);
   const [submitting, setSubmitting] = useState(false);
@@ -175,13 +176,23 @@ export default function CreateKpiModal({ onClose, onSuccess }: CreateKpiModalPro
   ]);
   const [customTemplate, setCustomTemplate] = useState<CustomTemplateType>('percentage');
   const [customExpression, setCustomExpression] = useState('(variable_1 / variable_2) * 100');
+  
+  // Business fields (Phase 9)
+  const [objetivo, setObjetivo] = useState('');
+  const [definicion, setDefinicion] = useState('');
+  const [medicion, setMedicion] = useState('');
+  const [sentido, setSentido] = useState<'higher_is_better' | 'lower_is_better' | 'range_is_better'>('higher_is_better');
+  const [fuenteDatos, setFuenteDatos] = useState('');
+  const [fechaEntregaInfo, setFechaEntregaInfo] = useState('');
 
   useEffect(() => {
-    fetch('/api/areas')
+    if (!empresaId) return;
+
+    fetch(`/api/areas?empresa_id=${empresaId}`)
       .then(r => r.json())
       .then(d => { if (d.success) setAreas(d.data as Area[]); })
-      .catch(() => toast.error('No se pudieron cargar las areas'));
-  }, []);
+      .catch(() => toast.error('No se pudieron cargar las áreas'));
+  }, [empresaId]);
 
   const selectedFormula = FORMULA_OPTIONS.find(f => f.value === formulaTipo);
   const limiteDiasValue = parseNumericInput(limiteDias, 2);
@@ -249,9 +260,14 @@ export default function CreateKpiModal({ onClose, onSuccess }: CreateKpiModalPro
   };
 
   const canNext = () => {
-    if (step === 0) return nombre.trim() !== '' && areaId !== '' && metaDescripcion.trim() !== '';
+    if (step === 0) return nombre.trim() !== '' && metaDescripcion.trim() !== '';
     if (step === 1) return formulaTipo !== '' && customFormulaValidation.valid;
-    if (step === 2) return verdeMin.trim() !== '' && amarilloMin.trim() !== '' && verdeMinValue > amarilloMinValue;
+    if (step === 2) {
+      if (verdeMin.trim() === '' || amarilloMin.trim() === '') return false;
+      return sentido === 'lower_is_better' 
+        ? verdeMinValue < amarilloMinValue 
+        : verdeMinValue > amarilloMinValue;
+    }
     return true;
   };
 
@@ -260,6 +276,7 @@ export default function CreateKpiModal({ onClose, onSuccess }: CreateKpiModalPro
     try {
       const payload = {
         nombre,
+        empresa_id: empresaId,
         area_id: areaId,
         meta_descripcion: metaDescripcion,
         formula_tipo: formulaTipo,
@@ -274,7 +291,13 @@ export default function CreateKpiModal({ onClose, onSuccess }: CreateKpiModalPro
         formula_personalizada: formulaTipo === 'formula_personalizada'
           ? customFormulaConfig
           : undefined,
-        guia: guia.trim() || undefined
+        guia: guia.trim() || undefined,
+        objetivo: objetivo.trim() || undefined,
+        definicion: definicion.trim() || undefined,
+        medicion: medicion.trim() || undefined,
+        sentido,
+        fuente_datos: fuenteDatos.trim() || undefined,
+        fecha_entrega_info: fechaEntregaInfo.trim() || undefined
       };
 
       const res = await fetch('/api/kpis/create', {
@@ -291,7 +314,7 @@ export default function CreateKpiModal({ onClose, onSuccess }: CreateKpiModalPro
         toast.error(data.error || 'Error al crear el KPI');
       }
     } catch {
-      toast.error('Error de conexion al crear el KPI');
+      toast.error('Error de conexión al crear el KPI');
     } finally {
       setSubmitting(false);
     }
@@ -304,7 +327,7 @@ export default function CreateKpiModal({ onClose, onSuccess }: CreateKpiModalPro
         <div className="create-kpi-header">
           <div>
             <h2 className="create-kpi-title">Crear nuevo KPI</h2>
-            <p className="create-kpi-subtitle">Configura un indicador de desempeno personalizado</p>
+            <p className="create-kpi-subtitle">Configura un indicador de desempeño personalizado</p>
           </div>
           <button className="modal-close" onClick={onClose}><X size={22} /></button>
         </div>
@@ -328,7 +351,7 @@ export default function CreateKpiModal({ onClose, onSuccess }: CreateKpiModalPro
           {/* STEP 0: Informacion basica */}
           {step === 0 && (
             <div className="create-step-content">
-              <h3 className="step-heading">Informacion basica</h3>
+              <h3 className="step-heading">Información básica</h3>
               <div className="field-group">
                 <label className="field-label">Nombre del indicador *</label>
                 <input
@@ -343,13 +366,13 @@ export default function CreateKpiModal({ onClose, onSuccess }: CreateKpiModalPro
               </div>
 
               <div className="field-group">
-                <label className="field-label">Area responsable *</label>
+                <label className="field-label">Área responsable *</label>
                 <select
                   className="field-input"
                   value={areaId}
                   onChange={e => setAreaId(e.target.value)}
                 >
-                  <option value="">- Selecciona un area -</option>
+                  <option value="">- Selecciona un área -</option>
                   {areas.map(a => (
                     <option key={a.id} value={a.id}>{a.nombre}</option>
                   ))}
@@ -357,7 +380,62 @@ export default function CreateKpiModal({ onClose, onSuccess }: CreateKpiModalPro
               </div>
 
               <div className="field-group">
-                <label className="field-label">Que se debe presentar como evidencia? *</label>
+                <label className="field-label">Objetivo del KPI</label>
+                <textarea
+                  className="field-input field-textarea"
+                  placeholder="¿Qué se busca lograr con este indicador?"
+                  value={objetivo}
+                  onChange={e => setObjetivo(e.target.value)}
+                  rows={2}
+                />
+              </div>
+
+              <div className="field-group">
+                <label className="field-label">Definición técnica</label>
+                <textarea
+                  className="field-input field-textarea"
+                  placeholder="Explicación detallada de lo que representa el indicador"
+                  value={definicion}
+                  onChange={e => setDefinicion(e.target.value)}
+                  rows={2}
+                />
+              </div>
+
+              <div className="field-group">
+                <label className="field-label">Método de medición</label>
+                <textarea
+                  className="field-input field-textarea"
+                  placeholder="¿Cómo se obtienen los datos?"
+                  value={medicion}
+                  onChange={e => setMedicion(e.target.value)}
+                  rows={2}
+                />
+              </div>
+
+              <div className="field-group">
+                <label className="field-label">Fuente de los datos</label>
+                <input
+                  className="field-input"
+                  type="text"
+                  placeholder="Ej: SAP, Excel de Operaciones, Bitácora física"
+                  value={fuenteDatos}
+                  onChange={e => setFuenteDatos(e.target.value)}
+                />
+              </div>
+
+              <div className="field-group">
+                <label className="field-label">Periodicidad de entrega de información</label>
+                <input
+                  className="field-input"
+                  type="text"
+                  placeholder="Ej: Primeros 5 días del mes"
+                  value={fechaEntregaInfo}
+                  onChange={e => setFechaEntregaInfo(e.target.value)}
+                />
+              </div>
+
+              <div className="field-group">
+                <label className="field-label">Evidencia requerida (para el capturista) *</label>
                 <textarea
                   className="field-input field-textarea"
                   placeholder="Ej: Acuse de recibo firmado por el supervisor"
@@ -368,10 +446,10 @@ export default function CreateKpiModal({ onClose, onSuccess }: CreateKpiModalPro
               </div>
 
               <div className="field-group">
-                <label className="field-label">Guia para el capturista (opcional)</label>
+                <label className="field-label">Guía adicional (opcional)</label>
                 <textarea
                   className="field-input field-textarea"
-                  placeholder="Instrucciones adicionales que vera el usuario al momento de capturar datos"
+                  placeholder="Instrucciones adicionales que verá el usuario al momento de capturar datos"
                   value={guia}
                   onChange={e => setGuia(e.target.value)}
                   rows={2}
@@ -383,8 +461,8 @@ export default function CreateKpiModal({ onClose, onSuccess }: CreateKpiModalPro
           {/* STEP 1: Tipo de formula */}
           {step === 1 && (
             <div className="create-step-content">
-              <h3 className="step-heading">Tipo de formula de calculo</h3>
-              <p className="step-description">Selecciona como se calculara el porcentaje de cumplimiento de este KPI.</p>
+              <h3 className="step-heading">Tipo de fórmula de cálculo</h3>
+              <p className="step-description">Selecciona cómo se calculará el porcentaje de cumplimiento de este KPI.</p>
               <div className="formula-options-grid">
                 {FORMULA_OPTIONS.map(opt => (
                   <button
@@ -409,7 +487,7 @@ export default function CreateKpiModal({ onClose, onSuccess }: CreateKpiModalPro
               {/* Extra config for specific formulas */}
               {formulaTipo === 'entregas_a_tiempo' && (
                 <div className="formula-extra-config">
-                  <label className="field-label">Limite de dias para cumplimiento</label>
+                  <label className="field-label">Límite de días para cumplimiento</label>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <input
                       type="number"
@@ -419,7 +497,7 @@ export default function CreateKpiModal({ onClose, onSuccess }: CreateKpiModalPro
                       min={1} max={30}
                       onChange={e => setLimiteDias(e.target.value)}
                     />
-                    <span className="field-hint">dias o menos = cumplimiento</span>
+                    <span className="field-hint">días o menos = cumplimiento</span>
                   </div>
                 </div>
               )}
@@ -453,10 +531,10 @@ export default function CreateKpiModal({ onClose, onSuccess }: CreateKpiModalPro
                         <BookOpen size={20} />
                       </div>
                       <div>
-                        <h4>Tutorial: como configurar una formula personalizada</h4>
+                        <h4>Tutorial: cómo configurar una fórmula personalizada</h4>
                         <p>
-                          Esta opcion sirve para crear un KPI que no encaja en las formulas predeterminadas.
-                          Tu defines que datos se capturan cada mes y la regla con la que se convierten en porcentaje.
+                          Esta opción sirve para crear un KPI que no encaja en las fórmulas predeterminadas.
+                          Tu defines qué datos se capturan cada mes y la regla con la que se convierten en porcentaje.
                         </p>
                       </div>
                     </div>
@@ -468,8 +546,8 @@ export default function CreateKpiModal({ onClose, onSuccess }: CreateKpiModalPro
                           1. Piensa que quieres medir
                         </div>
                         <p>
-                          Antes de escribir la formula, define el objetivo del KPI. Preguntate:
-                          "Que numeros necesito capturar para saber si voy bien o mal?"
+                          Antes de escribir la fórmula, define el objetivo del KPI. Pregúntate:
+                          "¿Qué números necesito capturar para saber si voy bien o mal?"
                         </p>
                         <ul>
                           <li>Solicitudes recibidas vs solicitudes resueltas</li>
@@ -484,7 +562,7 @@ export default function CreateKpiModal({ onClose, onSuccess }: CreateKpiModalPro
                           2. Crea los datos a capturar
                         </div>
                         <p>
-                          Cada "Dato" es un valor que el usuario llenara en la captura mensual. Usa nombres claros y faciles de entender.
+                          Cada "Dato" es un valor que el usuario llenará en la captura mensual. Usa nombres claros y fáciles de entender.
                         </p>
                         <ul>
                           <li>Dato 1: Solicitudes resueltas</li>
@@ -499,7 +577,7 @@ export default function CreateKpiModal({ onClose, onSuccess }: CreateKpiModalPro
                           3. Elige una forma de calcular
                         </div>
                         <p>
-                          Puedes arrancar con una plantilla. Eso cubre la mayoria de los casos y evita errores al escribir la formula manualmente.
+                          Puedes arrancar con una plantilla. Eso cubre la mayoría de los casos y evita errores al escribir la fórmula manualmente.
                         </p>
                         <ul>
                           <li>Porcentaje: (cumplidas / recibidas) x 100</li>
@@ -514,11 +592,11 @@ export default function CreateKpiModal({ onClose, onSuccess }: CreateKpiModalPro
                           4. Revisa antes de guardar
                         </div>
                         <p>
-                          La formula solo puede usar los datos definidos arriba. Si escribes una variable que no existe o divides entre cero, el sistema lo marcara.
+                          La fórmula solo puede usar los datos definidos arriba. Si escribes una variable que no existe o divides entre cero, el sistema lo marcará.
                         </p>
                         <ul>
                           <li>Usa nombres claros en cada dato</li>
-                          <li>Confirma que la formula refleje el KPI real</li>
+                          <li>Confirma que la fórmula refleje el KPI real</li>
                           <li>Verifica que el resultado esperado sea un porcentaje</li>
                         </ul>
                       </div>
@@ -528,7 +606,7 @@ export default function CreateKpiModal({ onClose, onSuccess }: CreateKpiModalPro
                       <div className="custom-formula-example__title">Ejemplo completo</div>
                       <div className="custom-formula-example__content">
                         <div>
-                          <strong>KPI:</strong> Cumplimiento de atencion de tickets
+                          <strong>KPI:</strong> Cumplimiento de atención de tickets
                         </div>
                         <div>
                           <strong>Datos a capturar:</strong> Tickets resueltos, tickets recibidos
@@ -537,13 +615,13 @@ export default function CreateKpiModal({ onClose, onSuccess }: CreateKpiModalPro
                           <strong>Formula:</strong> <span>(tickets_resueltos / tickets_recibidos) * 100</span>
                         </div>
                         <div>
-                          <strong>Interpretacion:</strong> si se resolvieron 45 de 50 tickets, el resultado del mes es 90%.
+                          <strong>Interpretación:</strong> si se resolvieron 45 de 50 tickets, el resultado del mes es 90%.
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  <label className="field-label">Constructor de formula personalizada</label>
+                  <label className="field-label">Constructor de fórmula personalizada</label>
                   <p className="step-description" style={{ marginBottom: '1rem' }}>
                     Primero define los datos que el usuario va a capturar y luego elige una forma de calcular el resultado.
                   </p>
@@ -554,8 +632,8 @@ export default function CreateKpiModal({ onClose, onSuccess }: CreateKpiModalPro
                       <span className="field-hint">Ejemplo: solicitudes recibidas, solicitudes resueltas, inspecciones correctas.</span>
                     </div>
                     <div style={{ background: '#f8fbff', border: '1px solid rgba(59, 130, 246, 0.15)', borderRadius: '14px', padding: '0.9rem 1rem' }}>
-                      <strong style={{ display: 'block', marginBottom: '0.35rem', color: 'var(--text-main)' }}>Paso 2. Elige como se calcula</strong>
-                      <span className="field-hint">Puedes empezar con una plantilla y, si lo necesitas, cambiarla a formula libre.</span>
+                      <strong style={{ display: 'block', marginBottom: '0.35rem', color: 'var(--text-main)' }}>Paso 2. Elige cómo se calcula</strong>
+                      <span className="field-hint">Puedes empezar con una plantilla y, si lo necesitas, cambiarla a fórmula libre.</span>
                     </div>
                   </div>
 
@@ -585,7 +663,7 @@ export default function CreateKpiModal({ onClose, onSuccess }: CreateKpiModalPro
                         />
 
                         <div style={{ marginBottom: '0.75rem', display: 'grid', gap: '0.35rem' }}>
-                          <span className="field-hint">Clave interna generada automaticamente</span>
+                          <span className="field-hint">Clave interna generada automáticamente</span>
                           <div style={{ padding: '0.75rem 0.9rem', borderRadius: '12px', background: 'white', border: '1px dashed rgba(37, 99, 235, 0.25)', fontFamily: 'monospace', color: 'var(--text-soft)' }}>
                             {variable.key}
                           </div>
@@ -606,7 +684,7 @@ export default function CreateKpiModal({ onClose, onSuccess }: CreateKpiModalPro
                     <Plus size={16} /> Agregar variable
                   </button>
 
-                  <label className="field-label">Plantilla de calculo</label>
+                  <label className="field-label">Plantilla de cálculo</label>
                   <div style={{ display: 'grid', gap: '0.75rem', marginBottom: '1rem' }}>
                     {CUSTOM_TEMPLATE_OPTIONS.map((option) => (
                       <button
@@ -630,11 +708,11 @@ export default function CreateKpiModal({ onClose, onSuccess }: CreateKpiModalPro
                     ))}
                   </div>
 
-                  <label className="field-label">Expresion matematica</label>
+                  <label className="field-label">Expresión matemática</label>
                   <div style={{ background: '#ffffff', border: '1px solid rgba(59, 130, 246, 0.12)', borderRadius: '12px', padding: '0.9rem 1rem', marginBottom: '0.75rem' }}>
-                    <strong style={{ display: 'block', marginBottom: '0.35rem', color: 'var(--text-main)' }}>Vista previa del calculo</strong>
+                    <strong style={{ display: 'block', marginBottom: '0.35rem', color: 'var(--text-main)' }}>Vista previa del cálculo</strong>
                     <span className="field-hint">
-                      El resultado se calculara con esta expresion: <span style={{ fontFamily: 'monospace', color: 'var(--text-main)' }}>{customExpression || 'Define una formula para continuar'}</span>
+                      El resultado se calculará con esta expresión: <span style={{ fontFamily: 'monospace', color: 'var(--text-main)' }}>{customExpression || 'Define una fórmula para continuar'}</span>
                     </span>
                   </div>
                   <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
@@ -677,7 +755,7 @@ export default function CreateKpiModal({ onClose, onSuccess }: CreateKpiModalPro
                   />
 
                   <div className="field-hint" style={{ marginTop: '0.5rem' }}>
-                    Puedes usar las plantillas para empezar rapido o cambiar a formula libre. Operaciones permitidas: suma (+), resta (-), multiplicacion (*), division (/), parentesis y numeros.
+                    Puedes usar las plantillas para empezar rápido o cambiar a fórmula libre. Operaciones permitidas: suma (+), resta (-), multiplicación (*), división (/), paréntesis y números.
                   </div>
 
                   {!customFormulaValidation.valid && (
@@ -693,59 +771,89 @@ export default function CreateKpiModal({ onClose, onSuccess }: CreateKpiModalPro
           {/* STEP 2: Semaforo */}
           {step === 2 && (
             <div className="create-step-content">
-              <h3 className="step-heading">Umbrales del semaforo</h3>
-              <p className="step-description">Define los rangos de porcentaje para cada color del semaforo.</p>
+              <h3 className="step-heading">Umbrales del semáforo</h3>
+              <p className="step-description">Define los rangos de porcentaje y el sentido de este indicador.</p>
+
+              <div className="field-group" style={{ marginBottom: '1.5rem' }}>
+                <label className="field-label">Sentido del KPI</label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                  <button
+                    type="button"
+                    className={`formula-option-card ${sentido === 'higher_is_better' ? 'selected' : ''}`}
+                    onClick={() => setSentido('higher_is_better')}
+                    style={{ padding: '0.75rem', textAlign: 'center' }}
+                  >
+                    <div style={{ fontWeight: '600', fontSize: '0.9rem' }}>Ascendente</div>
+                    <div className="field-hint">Mayor es mejor (ej: Ventas)</div>
+                  </button>
+                  <button
+                    type="button"
+                    className={`formula-option-card ${sentido === 'lower_is_better' ? 'selected' : ''}`}
+                    onClick={() => setSentido('lower_is_better')}
+                    style={{ padding: '0.75rem', textAlign: 'center' }}
+                  >
+                    <div style={{ fontWeight: '600', fontSize: '0.9rem' }}>Descendente</div>
+                    <div className="field-hint">Menor es mejor (ej: Accidentes)</div>
+                  </button>
+                </div>
+              </div>
 
               <div className="semaforo-config-grid">
                 <div className="semaforo-field verde">
                   <div className="semaforo-dot verde-dot"></div>
                   <div>
-                    <label className="field-label">Verde (Optimo) - minimo desde</label>
+                    <label className="field-label">Verde (Óptimo) - {sentido === 'lower_is_better' ? 'máximo hasta' : 'mínimo desde'}</label>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <input
                         type="number"
                         className="field-input semaforo-input"
                         value={verdeMin}
-                        min={1} max={100}
+                        min={0} max={1000}
                         onChange={e => setVerdeMin(e.target.value)}
                       />
                       <span className="field-hint">%</span>
                     </div>
-                    <span className="field-hint">El KPI es verde si el resultado es &ge; {verdeMinValue}%</span>
+                    <span className="field-hint">El KPI es verde si el resultado es {sentido === 'lower_is_better' ? '<=' : '>='} {verdeMinValue}%</span>
                   </div>
                 </div>
 
                 <div className="semaforo-field amarillo">
                   <div className="semaforo-dot amarillo-dot"></div>
                   <div>
-                    <label className="field-label">Amarillo (Alerta) - minimo desde</label>
+                    <label className="field-label">Amarillo (Alerta) - {sentido === 'lower_is_better' ? 'máximo hasta' : 'mínimo desde'}</label>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <input
                         type="number"
                         className="field-input semaforo-input"
                         value={amarilloMin}
-                        min={1} max={99}
+                        min={0} max={1000}
                         onChange={e => setAmarilloMin(e.target.value)}
                       />
                       <span className="field-hint">%</span>
                     </div>
-                    <span className="field-hint">Amarillo: &ge; {amarilloMinValue}% y &lt; {verdeMinValue}%</span>
+                    <span className="field-hint">Amarillo: {sentido === 'lower_is_better' ? `> ${verdeMinValue}% y <= ${amarilloMinValue}%` : `>= ${amarilloMinValue}% y < ${verdeMinValue}%`}</span>
                   </div>
                 </div>
 
                 <div className="semaforo-field rojo">
                   <div className="semaforo-dot rojo-dot"></div>
                   <div>
-                    <label className="field-label">Rojo (Riesgo) - automatico</label>
-                    <div className="semaforo-auto-value">&lt; {amarilloMinValue}%</div>
-                    <span className="field-hint">Calculado automaticamente</span>
+                    <label className="field-label">Rojo (Riesgo) - automático</label>
+                    <div className="semaforo-auto-value">{sentido === 'lower_is_better' ? '>' : '<'} {amarilloMinValue}%</div>
+                    <span className="field-hint">Calculado automáticamente</span>
                   </div>
                 </div>
               </div>
 
-              {verdeMin.trim() !== '' && amarilloMin.trim() !== '' && verdeMinValue <= amarilloMinValue && (
+              {verdeMin.trim() !== '' && amarilloMin.trim() !== '' && (
+                sentido === 'lower_is_better' 
+                  ? verdeMinValue >= amarilloMinValue
+                  : verdeMinValue <= amarilloMinValue
+              ) && (
                 <div className="semaforo-warning">
-                  El umbral verde debe ser mayor al umbral amarillo.
+                  {sentido === 'lower_is_better' 
+                    ? 'El umbral verde debe ser menor al umbral amarillo.'
+                    : 'El umbral verde debe ser mayor al umbral amarillo.'}
                 </div>
               )}
             </div>
@@ -801,13 +909,49 @@ export default function CreateKpiModal({ onClose, onSuccess }: CreateKpiModalPro
                 <div className="confirm-row">
                   <span className="confirm-key">Semaforo</span>
                   <span className="confirm-val">
-                    <span style={{ color: '#10b981' }}>Verde &ge; {verdeMinValue}%</span>
+                    <span style={{ color: '#10b981' }}>
+                      {sentido === 'lower_is_better' ? 'Verde <=' : 'Verde >= '} {verdeMinValue}%
+                    </span>
                     {' | '}
-                    <span style={{ color: '#f59e0b' }}>Amarillo &ge; {amarilloMinValue}%</span>
+                    <span style={{ color: '#f59e0b' }}>
+                      Amarillo {sentido === 'lower_is_better' ? '<=' : '>='} {amarilloMinValue}%
+                    </span>
                     {' | '}
-                    <span style={{ color: '#ef4444' }}>Rojo &lt; {amarilloMinValue}%</span>
+                    <span style={{ color: '#ef4444' }}>
+                      Rojo {sentido === 'lower_is_better' ? '>' : '<'} {amarilloMinValue}%
+                    </span>
                   </span>
                 </div>
+                {objetivo && (
+                  <div className="confirm-row">
+                    <span className="confirm-key">Objetivo</span>
+                    <span className="confirm-val">{objetivo}</span>
+                  </div>
+                )}
+                {definicion && (
+                  <div className="confirm-row">
+                    <span className="confirm-key">Definición</span>
+                    <span className="confirm-val">{definicion}</span>
+                  </div>
+                )}
+                {medicion && (
+                  <div className="confirm-row">
+                    <span className="confirm-key">Medición</span>
+                    <span className="confirm-val">{medicion}</span>
+                  </div>
+                )}
+                {fuenteDatos && (
+                  <div className="confirm-row">
+                    <span className="confirm-key">Fuente</span>
+                    <span className="confirm-val">{fuenteDatos}</span>
+                  </div>
+                )}
+                {fechaEntregaInfo && (
+                  <div className="confirm-row">
+                    <span className="confirm-key">Entrega Info</span>
+                    <span className="confirm-val">{fechaEntregaInfo}</span>
+                  </div>
+                )}
                 {guia && (
                   <div className="confirm-row">
                     <span className="confirm-key">Guia de captura</span>

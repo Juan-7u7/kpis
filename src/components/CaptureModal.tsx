@@ -175,8 +175,8 @@ export default function CaptureModal({ kpi_id, anio, mes, onClose, onSuccess }: 
     : (completedDocuments > 0 ? 100 : 0);
   const remainingDocuments = Math.max(0, documentFields.length - completedDocuments);
   const documentaryMessage = config.formula_tipo === 'documental_doble'
-    ? (remainingDocuments === 0
-      ? 'Listo: ya estan confirmados los 2 documentos y el KPI quedara en 100%.'
+      ? (remainingDocuments === 0
+      ? 'Listo: ya están confirmados los 2 documentos y el KPI quedará en 100%.'
       : remainingDocuments === 1
         ? 'Falta 1 documento para llegar al 100% este mes.'
         : 'Debes confirmar 2 documentos para que el KPI llegue a 100% este mes.')
@@ -196,7 +196,7 @@ export default function CaptureModal({ kpi_id, anio, mes, onClose, onSuccess }: 
             {false && (
               <div style={{ padding: '1rem 1.25rem 1.25rem' }}>
                 <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.75rem' }}>
-                  FÃ³rmula configurada para este KPI
+                  Fórmula configurada para este KPI
                 </div>
                 <div style={{ background: '#0f172a', color: '#e2e8f0', borderRadius: '12px', padding: '0.9rem 1rem', fontFamily: 'monospace', fontSize: '0.95rem', marginBottom: '0.85rem', overflowX: 'auto' }}>
                   {customFormula?.expression || config?.config_json?.formula || 'Formula personalizada'}
@@ -384,7 +384,7 @@ export default function CaptureModal({ kpi_id, anio, mes, onClose, onSuccess }: 
 
           {config.tipo_captura === 'formula_personalizada' && (
             <div className="form-group">
-              <label>Variables para la fÃ³rmula</label>
+              <label>Variables para la fórmula</label>
               <div style={{ display: 'grid', gap: '0.85rem' }}>
                 {(customFormula?.variables || []).map((variable) => (
                   <div key={variable.key}>
@@ -403,7 +403,7 @@ export default function CaptureModal({ kpi_id, anio, mes, onClose, onSuccess }: 
                       placeholder={variable.helpText || `Captura el valor de ${variable.label.toLowerCase()}`}
                     />
                     <div className="field-hint" style={{ marginTop: '0.35rem' }}>
-                      Clave usada por la formula: <span style={{ fontFamily: 'monospace' }}>{variable.key}</span>
+                      Clave usada por la fórmula: <span style={{ fontFamily: 'monospace' }}>{variable.key}</span>
                     </div>
                   </div>
                 ))}

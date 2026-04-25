@@ -1,13 +1,20 @@
 import { Router } from 'express';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import {
+  createArea,
+  createEmpresa,
   createKpi,
+  deactivateArea,
+  deactivateEmpresa,
   deleteKpiById,
+  getEmpresas,
   getAreas,
   getKpiConfigById,
   getKpiHistory,
   getKpisByPeriod,
-  getNextKpiOrder
+  getNextKpiOrder,
+  updateArea,
+  updateEmpresa
 } from '../services/kpiService.js';
 import type { CreateKpiBody } from '../types/kpi.js';
 
@@ -30,19 +37,72 @@ router.get(
 );
 
 router.get(
+  '/empresas',
+  asyncHandler(async (_req, res) => {
+    const data = await getEmpresas();
+    res.json({ success: true, data });
+  })
+);
+
+router.post(
+  '/empresas/create',
+  asyncHandler(async (req, res) => {
+    try {
+      const data = await createEmpresa(req.body);
+      res.json({ success: true, data });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'No se pudo crear la empresa.';
+      res.status(400).json({ success: false, error: message });
+    }
+  })
+);
+
+router.put(
+  '/empresas/:id',
+  asyncHandler(async (req, res) => {
+    try {
+      const data = await updateEmpresa({ ...req.body, id: getSingleQueryValue(req.params.id) || '' });
+      res.json({ success: true, data });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'No se pudo actualizar la empresa.';
+      res.status(400).json({ success: false, error: message });
+    }
+  })
+);
+
+router.delete(
+  '/empresas/:id',
+  asyncHandler(async (req, res) => {
+    try {
+      const empresaId = getSingleQueryValue(req.params.id);
+      if (!empresaId) {
+        return res.status(400).json({ success: false, error: 'Debe especificar el id de la empresa.' });
+      }
+
+      await deactivateEmpresa(empresaId);
+      res.json({ success: true, message: 'Empresa desactivada correctamente.' });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'No se pudo desactivar la empresa.';
+      res.status(400).json({ success: false, error: message });
+    }
+  })
+);
+
+router.get(
   '/kpis',
   asyncHandler(async (req, res) => {
+    const empresaId = String(req.query.empresa_id ?? '');
     const anio = String(req.query.anio ?? '');
     const mes = String(req.query.mes ?? '');
 
-    if (!anio || !mes) {
+    if (!empresaId || !anio || !mes) {
       return res.status(400).json({
         success: false,
-        error: 'Debe especificar anio y mes (ej: /api/kpis?anio=2026&mes=2)'
+        error: 'Debe especificar empresa_id, anio y mes.'
       });
     }
 
-    const data = await getKpisByPeriod(anio, mes);
+    const data = await getKpisByPeriod(empresaId, anio, mes);
     res.json({ success: true, data });
   })
 );
@@ -68,16 +128,74 @@ router.get(
 
 router.get(
   '/areas',
-  asyncHandler(async (_req, res) => {
-    const data = await getAreas();
+  asyncHandler(async (req, res) => {
+    const empresaId = req.query.empresa_id ? String(req.query.empresa_id) : undefined;
+    const data = await getAreas(empresaId);
     res.json({ success: true, data });
   })
 );
 
 router.get(
+  '/empresas/:empresa_id/areas',
+  asyncHandler(async (req, res) => {
+    const empresaId = getSingleQueryValue(req.params.empresa_id);
+    const data = await getAreas(empresaId);
+    res.json({ success: true, data });
+  })
+);
+
+router.post(
+  '/areas/create',
+  asyncHandler(async (req, res) => {
+    try {
+      const data = await createArea(req.body);
+      res.json({ success: true, data });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'No se pudo crear el área.';
+      res.status(400).json({ success: false, error: message });
+    }
+  })
+);
+
+router.put(
+  '/areas/:id',
+  asyncHandler(async (req, res) => {
+    try {
+      const data = await updateArea({ ...req.body, id: getSingleQueryValue(req.params.id) || '' });
+      res.json({ success: true, data });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'No se pudo actualizar el área.';
+      res.status(400).json({ success: false, error: message });
+    }
+  })
+);
+
+router.delete(
+  '/areas/:id',
+  asyncHandler(async (req, res) => {
+    try {
+      const areaId = getSingleQueryValue(req.params.id);
+      if (!areaId) {
+        return res.status(400).json({ success: false, error: 'Debe especificar el id del área.' });
+      }
+
+      await deactivateArea(areaId);
+      res.json({ success: true, message: 'Área desactivada correctamente.' });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'No se pudo desactivar el área.';
+      res.status(400).json({ success: false, error: message });
+    }
+  })
+);
+
+router.get(
   '/kpis/orden',
-  asyncHandler(async (_req, res) => {
-    const nextOrder = await getNextKpiOrder();
+  asyncHandler(async (req, res) => {
+    const empresaId = req.query.empresa_id ? String(req.query.empresa_id) : '';
+    if (!empresaId) {
+      return res.status(400).json({ success: false, error: 'Debe especificar empresa_id.' });
+    }
+    const nextOrder = await getNextKpiOrder(empresaId);
     res.json({ success: true, next_order: nextOrder });
   })
 );

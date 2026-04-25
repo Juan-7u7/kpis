@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, TrendingUp, TrendingDown, Minus, Activity, FileText, MessageSquare, Table } from 'lucide-react';
+import { X, TrendingUp, TrendingDown, Minus, Activity, MessageSquare, Table, Target, Book, Ruler, Database, Clock } from 'lucide-react';
 
 interface KpiData {
   id: string;
@@ -25,6 +25,12 @@ interface KpiMeta {
   formula_descripcion?: string;
   semaforo_verde_min?: number;
   semaforo_amarillo_min?: number;
+  objetivo?: string;
+  definicion?: string;
+  medicion?: string;
+  sentido?: 'higher_is_better' | 'lower_is_better' | 'range_is_better';
+  fuente_datos?: string;
+  fecha_entrega_info?: string;
 }
 
 interface KpiDetailModalProps {
@@ -135,11 +141,10 @@ export default function KpiDetailModal({ kpi, anio, onClose }: KpiDetailModalPro
                 </div>
 
                 <div className="detail-hero-copy">
-                  <div className="detail-hero-kicker">Resumen del ultimo periodo capturado</div>
+                  <div className="detail-hero-kicker">Resumen del último periodo capturado</div>
                   <h3>{latestHistory.mes_nombre} {anio}</h3>
                   <p>
-                    Este donut 3D resume el estado actual del KPI para el ultimo mes con captura registrada.
-                    El color refleja el semaforo y el centro muestra el valor final del periodo.
+                    {meta?.objetivo || 'Este donut 3D resume el estado actual del KPI para el último mes con captura registrada. El color refleja el semáforo y el centro muestra el valor final del periodo.'}
                   </p>
 
                   <div className="detail-hero-stats">
@@ -154,121 +159,136 @@ export default function KpiDetailModal({ kpi, anio, onClose }: KpiDetailModalPro
                       <span className="detail-hero-stat__value">{latestHistory.valor}{latestHistory.unidad}</span>
                     </div>
                     <div className="detail-hero-stat">
-                      <span className="detail-hero-stat__label">Semaforo verde desde</span>
-                      <span className="detail-hero-stat__value">{meta?.semaforo_verde_min || 100}%</span>
+                      <span className="detail-hero-stat__label">Sentido</span>
+                      <span className="detail-hero-stat__value" style={{ fontSize: '0.75rem' }}>
+                        {meta?.sentido === 'lower_is_better' ? 'Menor es mejor' : 'Mayor es mejor'}
+                      </span>
                     </div>
                   </div>
                 </div>
               </div>
             )}
             
-            {/* Metadata Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.25rem', marginBottom: '2rem' }}>
+            {/* Metadata Grid (Phase 9) */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem', marginBottom: '2rem' }}>
                <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '15px', border: '1px solid #e2e8f0' }}>
                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', marginBottom: '0.75rem', fontSize: '0.85rem', fontWeight: 700 }}>
-                   <FileText size={16} /> DEFINICIÓN
+                   <Target size={16} /> OBJETIVO
                  </div>
-                 <p style={{ fontSize: '0.9rem', lineHeight: '1.5', color: 'var(--text-main)' }}>{meta?.meta_descripcion || 'Medición operativa del desempeño del área.'}</p>
+                 <p style={{ fontSize: '0.9rem', lineHeight: '1.5', color: 'var(--text-main)' }}>{meta?.objetivo || 'Mejorar el desempeño operativo del área.'}</p>
                </div>
 
-                <div className='formula-visual-card'>
-                  <div className='formula-visual-title'> ¿Cómo se calcula este KPI?
-                  </div>
-                  {meta?.formula_tipo === 'si_no' && (
-                    <div className='formula-visual-body'>
-                      <div className='formula-branch'>
-                        <div className='formula-pill pill-input'> Marca SÍ</div>
-                        <div className='formula-arrow'>→</div>
-                        <div className='formula-pill pill-green'>100% </div>
-                      </div>
-                      <div className='formula-branch'>
-                        <div className='formula-pill pill-input'> Marca NO</div>
-                        <div className='formula-arrow'>→</div>
-                        <div className='formula-pill pill-red'>0% </div>
-                      </div>
-                    </div>
-                  )}
-                  {meta?.formula_tipo === 'documental_doble' && (
-                    <div className='formula-visual-body'>
-                      <div className='formula-fraction'>
-                        <div className='fraction-numerator'>Documentos entregados</div>
-                        <div className='fraction-line'></div>
-                        <div className='fraction-denominator'>2 documentos requeridos</div>
-                      </div>
-                      <div className='formula-arrow'>×</div>
-                      <div className='formula-pill pill-green'>100</div>
-                    </div>
-                  )}
-                  {meta?.formula_tipo === 'cumplidos_programados' && (
-                    <div className='formula-visual-body'>
-                      <div className='formula-fraction'>
-                        <div className='fraction-numerator'> Actividades Cumplidas</div>
-                        <div className='fraction-line'></div>
-                        <div className='fraction-denominator'> Actividades Programadas</div>
-                      </div>
-                      <div className='formula-arrow'>×</div>
-                      <div className='formula-pill pill-green'>100</div>
-                    </div>
-                  )}
-                  {meta?.formula_tipo === 'correctos_total' && (
-                    <div className='formula-visual-body'>
-                      <div className='formula-fraction'>
-                        <div className='fraction-numerator'> Operaciones Correctas</div>
-                        <div className='fraction-line'></div>
-                        <div className='fraction-denominator'> Total de Operaciones</div>
-                      </div>
-                      <div className='formula-arrow'>×</div>
-                      <div className='formula-pill pill-green'>100</div>
-                    </div>
-                  )}
-                  {meta?.formula_tipo === 'entregas_a_tiempo' && (
-                    <div className='formula-visual-body'>
-                      <div className='formula-fraction'>
-                        <div className='fraction-numerator'> Entregas en ≤ 2 días</div>
-                        <div className='fraction-line'></div>
-                        <div className='fraction-denominator'> Total de Entregas del mes</div>
-                      </div>
-                      <div className='formula-arrow'>×</div>
-                      <div className='formula-pill pill-green'>100</div>
-                    </div>
-                  )}
-                  {!['si_no','documental_doble','cumplidos_programados','correctos_total','entregas_a_tiempo'].includes(meta?.formula_tipo ?? '') && (
-                    <div className='formula-visual-body'>
-                      <div className='formula-pill pill-green'>Cálculo Estándar %</div>
-                    </div>
-                  )}
-                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', padding: '4px 14px 10px', fontStyle: 'italic', textAlign: 'center' }}>
-                    {meta?.formula_descripcion || 'Se evalúa el cumplimiento contra la meta programada.'}
-                  </p>
-                </div>
+               <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '15px', border: '1px solid #e2e8f0' }}>
+                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', marginBottom: '0.75rem', fontSize: '0.85rem', fontWeight: 700 }}>
+                   <Book size={16} /> DEFINICIÓN TÉCNICA
+                 </div>
+                 <p style={{ fontSize: '0.9rem', lineHeight: '1.5', color: 'var(--text-main)' }}>{meta?.definicion || meta?.meta_descripcion || 'Sin definición detallada.'}</p>
+               </div>
 
                <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '15px', border: '1px solid #e2e8f0' }}>
                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', marginBottom: '0.75rem', fontSize: '0.85rem', fontWeight: 700 }}>
-                   <Activity size={16} /> REGLAS (SEMÁFORO)
+                   <Ruler size={16} /> MEDICIÓN
+                 </div>
+                 <p style={{ fontSize: '0.9rem', lineHeight: '1.5', color: 'var(--text-main)' }}>{meta?.medicion || 'Cálculo basado en registros mensuales.'}</p>
+               </div>
+
+               <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '15px', border: '1px solid #e2e8f0' }}>
+                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', marginBottom: '0.75rem', fontSize: '0.85rem', fontWeight: 700 }}>
+                   <Database size={16} /> FUENTE DE DATOS
+                 </div>
+                 <p style={{ fontSize: '0.9rem', lineHeight: '1.5', color: 'var(--text-main)' }}>{meta?.fuente_datos || 'Registros internos.'}</p>
+               </div>
+
+               <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '15px', border: '1px solid #e2e8f0' }}>
+                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', marginBottom: '0.75rem', fontSize: '0.85rem', fontWeight: 700 }}>
+                   <Clock size={16} /> ENTREGA DE INFO
+                 </div>
+                 <p style={{ fontSize: '0.9rem', lineHeight: '1.5', color: 'var(--text-main)' }}>{meta?.fecha_entrega_info || 'Mensual.'}</p>
+               </div>
+
+               <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '15px', border: '1px solid #e2e8f0' }}>
+                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', marginBottom: '0.75rem', fontSize: '0.85rem', fontWeight: 700 }}>
+                   <Activity size={16} /> SEMÁFORO ({meta?.sentido === 'lower_is_better' ? 'DESC' : 'ASC'})
                  </div>
                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem' }}>
-                      <span style={{ color: '#10b981' }}>●</span> <b>Óptimo:</b> ≥ {meta?.semaforo_verde_min || 100}%
+                      <span style={{ color: '#10b981' }}>●</span> <b>Óptimo:</b> {meta?.sentido === 'lower_is_better' ? '<=' : '>='} {meta?.semaforo_verde_min || 100}%
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem' }}>
-                      <span style={{ color: '#f59e0b' }}>●</span> <b>Alerta:</b> ≥ {meta?.semaforo_amarillo_min || 80}%
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem' }}>
-                      <span style={{ color: '#ef4444' }}>●</span> <b>Riesgo:</b> &lt; {meta?.semaforo_amarillo_min || 80}%
+                      <span style={{ color: '#f59e0b' }}>●</span> <b>Alerta:</b> {meta?.sentido === 'lower_is_better' ? '<=' : '>='} {meta?.semaforo_amarillo_min || 80}%
                     </div>
                  </div>
                </div>
             </div>
 
-            <div style={{ background: 'rgba(59, 130, 246, 0.03)', padding: '1rem', borderRadius: '12px', border: '1px dashed rgba(59, 130, 246, 0.3)', marginBottom: '2rem' }}>
-               <h4 style={{ fontSize: '0.85rem', fontWeight: 700, marginBottom: '6px', color: 'var(--accent-color)' }}> ¿Cómo mejorar este resultado?</h4>
-               <p style={{ fontSize: '0.85rem', color: 'var(--text-main)', margin: 0 }}>
-                 {meta?.formula_tipo === 'entregas_a_tiempo' && 'Asegúrate de registrar las fechas de entrega lo más cercano posible a la fecha de solicitud. El límite para cumplimiento es de 2 días.'}
-                 {meta?.formula_tipo === 'cumplidos_programados' && 'Incrementa la eficiencia operativa cumpliendo con el 100% de las actividades programadas en el mes.'}
-                 {meta?.formula_tipo === 'documental_doble' && 'Verifica que ambos documentos obligatorios estén correctos y cargados en el sistema para obtener el 100%.'}
-                 {meta?.formula_tipo === 'si_no' && 'El cumplimiento es absoluto; asegúrate de realizar la actividad para marcar el SÍ.'}
-                 {!['entregas_a_tiempo', 'cumplidos_programados', 'documental_doble', 'si_no'].includes(meta?.formula_tipo ?? '') && 'Revisa los criterios de evaluación del área para asegurar que la captura de datos sea precisa y a tiempo.'}
-               </p>
+            <div className='formula-visual-card' style={{ marginBottom: '2rem' }}>
+              <div className='formula-visual-title'> ¿Cómo se calcula este KPI?</div>
+              {meta?.formula_tipo === 'si_no' && (
+                <div className='formula-visual-body'>
+                  <div className='formula-branch'>
+                    <div className='formula-pill pill-input'> Marca SÍ</div>
+                    <div className='formula-arrow'>→</div>
+                    <div className='formula-pill pill-green'>100% </div>
+                  </div>
+                  <div className='formula-branch'>
+                    <div className='formula-pill pill-input'> Marca NO</div>
+                    <div className='formula-arrow'>→</div>
+                    <div className='formula-pill pill-red'>0% </div>
+                  </div>
+                </div>
+              )}
+              {meta?.formula_tipo === 'documental_doble' && (
+                <div className='formula-visual-body'>
+                  <div className='formula-fraction'>
+                    <div className='fraction-numerator'>Documentos entregados</div>
+                    <div className='fraction-line'></div>
+                    <div className='fraction-denominator'>2 documentos requeridos</div>
+                  </div>
+                  <div className='formula-arrow'>×</div>
+                  <div className='formula-pill pill-green'>100</div>
+                </div>
+              )}
+              {meta?.formula_tipo === 'cumplidos_programados' && (
+                <div className='formula-visual-body'>
+                  <div className='formula-fraction'>
+                    <div className='fraction-numerator'> Actividades Cumplidas</div>
+                    <div className='fraction-line'></div>
+                    <div className='fraction-denominator'> Actividades Programadas</div>
+                  </div>
+                  <div className='formula-arrow'>×</div>
+                  <div className='formula-pill pill-green'>100</div>
+                </div>
+              )}
+              {meta?.formula_tipo === 'correctos_total' && (
+                <div className='formula-visual-body'>
+                  <div className='formula-fraction'>
+                    <div className='fraction-numerator'> Operaciones Correctas</div>
+                    <div className='fraction-line'></div>
+                    <div className='fraction-denominator'> Total de Operaciones</div>
+                  </div>
+                  <div className='formula-arrow'>×</div>
+                  <div className='formula-pill pill-green'>100</div>
+                </div>
+              )}
+              {meta?.formula_tipo === 'entregas_a_tiempo' && (
+                <div className='formula-visual-body'>
+                  <div className='formula-fraction'>
+                    <div className='fraction-numerator'> Entregas en ≤ 2 días</div>
+                    <div className='fraction-line'></div>
+                    <div className='fraction-denominator'> Total de Entregas del mes</div>
+                  </div>
+                  <div className='formula-arrow'>×</div>
+                  <div className='formula-pill pill-green'>100</div>
+                </div>
+              )}
+              {!['si_no','documental_doble','cumplidos_programados','correctos_total','entregas_a_tiempo'].includes(meta?.formula_tipo ?? '') && (
+                <div className='formula-visual-body'>
+                  <div className='formula-pill pill-green'>Cálculo Personalizado</div>
+                </div>
+              )}
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', padding: '4px 14px 10px', fontStyle: 'italic', textAlign: 'center' }}>
+                {meta?.formula_descripcion || 'Se evalúa el cumplimiento conforme a la regla definida.'}
+              </p>
             </div>
 
             {renderComparison()}

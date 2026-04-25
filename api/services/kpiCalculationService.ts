@@ -120,10 +120,26 @@ export const calculateKpiResult = (
 
     const verdeMin = config.semaforo_verde_min ?? 100;
     const amarilloMin = config.semaforo_amarillo_min ?? 80;
+    const sentido = config.config_json?.sentido ?? 'higher_is_better';
 
-    if (valor_resultado >= verdeMin) semaforo = 'verde';
-    else if (valor_resultado >= amarilloMin) semaforo = 'amarillo';
-    else semaforo = 'rojo';
+    if (sentido === 'lower_is_better') {
+      if (valor_resultado <= verdeMin) semaforo = 'verde';
+      else if (valor_resultado <= amarilloMin) semaforo = 'amarillo';
+      else semaforo = 'rojo';
+    } else if (sentido === 'range_is_better') {
+      // Para rango, interpretamos verdeMin como min y verdeMax como max
+      // Como la tabla no tiene verdeMax aun, usamos un hack o asumimos 
+      // que por ahora solo soportamos higher/lower hasta que migremos la DB
+      // Por simplicidad en esta fase, trataremos range como higher si no hay mas datos
+      if (valor_resultado >= verdeMin) semaforo = 'verde';
+      else if (valor_resultado >= amarilloMin) semaforo = 'amarillo';
+      else semaforo = 'rojo';
+    } else {
+      // higher_is_better (default)
+      if (valor_resultado >= verdeMin) semaforo = 'verde';
+      else if (valor_resultado >= amarilloMin) semaforo = 'amarillo';
+      else semaforo = 'rojo';
+    }
   }
 
   return {

@@ -1,5 +1,5 @@
-﻿import React, { useState, useEffect } from 'react';
-import { BarChart3, Calendar, Filter, Search, Edit3, HelpCircle, Inbox, PlusCircle, Trash2 } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { BarChart3, Calendar, Filter, Search, Edit3, HelpCircle, Inbox, PlusCircle, Trash2, LogOut, LayoutGrid, Users, Briefcase } from 'lucide-react';
 import { Toaster, toast } from 'react-hot-toast';
 import { driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
@@ -7,6 +7,18 @@ import CaptureModal from './components/CaptureModal';
 import KpiDetailModal from './components/KpiDetailModal';
 import CreateKpiModal from './components/CreateKpiModal';
 import ConfirmModal from './components/ConfirmModal';
+import CreateEmpresaModal from './components/CreateEmpresaModal';
+import CreateAreaModal from './components/CreateAreaModal';
+import CreateWorkerModal from './components/CreateWorkerModal';
+import WorkerAssignmentsModal from './components/WorkerAssignmentsModal';
+import CompanyHub from './components/CompanyHub';
+
+interface Empresa {
+  id: string;
+  nombre: string;
+  slug: string;
+  descripcion?: string | null;
+}
 
 interface KPI {
   id: string;
@@ -20,6 +32,19 @@ interface KPI {
   formula_tipo: string;
   tipo_resultado: string;
   es_borrable?: boolean;
+}
+
+interface Profile {
+  id: string;
+  nombre: string;
+  email: string;
+  activo: boolean;
+}
+
+interface Area {
+  id: string;
+  nombre: string;
+  descripcion?: string | null;
 }
 
 interface KpiGroup {
@@ -38,7 +63,15 @@ const getCurrentPeriod = () => {
 function App() {
   const currentPeriod = getCurrentPeriod();
   const isAdminView = window.location.pathname.replace(/\/+$/, '').toLowerCase().endsWith('/admin');
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(() => {
+    return localStorage.getItem('kpi_admin_auth') === 'true';
+  });
+  const [adminPassword, setAdminPassword] = useState('');
+  const [empresas, setEmpresas] = useState<Empresa[]>([]);
+  const [selectedEmpresaId, setSelectedEmpresaId] = useState('');
   const [kpis, setKpis] = useState<KPI[]>([]);
+  const [areas, setAreas] = useState<Area[]>([]);
+  const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -53,12 +86,83 @@ function App() {
   const [captureKpi, setCaptureKpi] = useState<KPI | null>(null);
   const [kpiForHistory, setKpiForHistory] = useState<KPI | null>(null);
   const [showCreateKpi, setShowCreateKpi] = useState(false);
+  const [showCreateEmpresa, setShowCreateEmpresa] = useState(false);
+  const [showCreateArea, setShowCreateArea] = useState(false);
+  const [showCreateWorker, setShowCreateWorker] = useState(false);
+  const [empresaToEdit, setEmpresaToEdit] = useState<Empresa | null>(null);
+  const [areaToEdit, setAreaToEdit] = useState<Area | null>(null);
+  const [profileToEdit, setProfileToEdit] = useState<Profile | null>(null);
   const [kpiToDelete, setKpiToDelete] = useState<KPI | null>(null);
+  const [empresaToDeactivate, setEmpresaToDeactivate] = useState<Empresa | null>(null);
+  const [areaToDeactivate, setAreaToDeactivate] = useState<Area | null>(null);
+  const [profileToDeactivate, setProfileToDeactivate] = useState<Profile | null>(null);
+  const [profileForAssignments, setProfileForAssignments] = useState<Profile | null>(null);
 
-  const fetchKPIs = React.useCallback(async () => {
+  const fetchEmpresas = useCallback(async () => {
+    try {
+      const res = await fetch('/api/empresas');
+      if (!res.ok) throw new Error('No se pudieron cargar las empresas.');
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || 'No se pudieron cargar las empresas.');
+
+      const empresasData = data.data as Empresa[];
+      setEmpresas(empresasData);
+      setSelectedEmpresaId((current) =>
+        empresasData.some((empresa) => empresa.id === current) ? current : (empresasData[0]?.id || '')
+      );
+      return empresasData;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Error desconocido';
+      setError(message);
+      return [];
+    }
+  }, []);
+
+  const fetchProfiles = useCallback(async () => {
+    if (!selectedEmpresaId) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/empresas/${selectedEmpresaId}/profiles`);
+      if (!res.ok) throw new Error('No se pudieron cargar los trabajadores.');
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || 'No se pudieron cargar los trabajadores.');
+      setProfiles(data.data);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Error desconocido';
+      toast.error(message);
+    }
+  }, [selectedEmpresaId]);
+
+  const fetchAreas = useCallback(async () => {
+    if (!selectedEmpresaId) {
+      setAreas([]);
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/empresas/${selectedEmpresaId}/areas`);
+      if (!res.ok) throw new Error('No se pudieron cargar las áreas.');
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || 'No se pudieron cargar las áreas.');
+      setAreas(data.data);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Error desconocido';
+      toast.error(message);
+    }
+  }, [selectedEmpresaId]);
+
+  const fetchKPIs = useCallback(async () => {
+    if (!selectedEmpresaId) {
+      setKpis([]);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     try {
-      const res = await fetch(`/api/kpis?anio=${selectedYear}&mes=${selectedMonth}`);
+      const res = await fetch(`/api/kpis?empresa_id=${selectedEmpresaId}&anio=${selectedYear}&mes=${selectedMonth}`);
       if (!res.ok) throw new Error('Error al conectar con la API');
       const data = await res.json();
       if (data.success) {
@@ -72,12 +176,45 @@ function App() {
     } finally {
       setLoading(false);
     }
-  }, [selectedYear, selectedMonth]);
+  }, [selectedEmpresaId, selectedYear, selectedMonth]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void fetchEmpresas();
+  }, [fetchEmpresas]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchKPIs();
   }, [fetchKPIs]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void fetchProfiles();
+  }, [fetchProfiles]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void fetchAreas();
+  }, [fetchAreas]);
+
+  const handleAdminLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    // En una fase posterior esto vendría de una API o Env variable
+    if (adminPassword === 'admin123') {
+      localStorage.setItem('kpi_admin_auth', 'true');
+      setIsAdminAuthenticated(true);
+      toast.success('Sesión iniciada como administrador');
+    } else {
+      toast.error('Contraseña incorrecta');
+    }
+  };
+
+  const handleAdminLogout = () => {
+    localStorage.removeItem('kpi_admin_auth');
+    setIsAdminAuthenticated(false);
+    toast.success('Sesión cerrada');
+  };
 
   useEffect(() => {
     if (!isAutoPeriod) return;
@@ -133,6 +270,64 @@ function App() {
     }
   };
 
+  const deactivateEmpresa = async () => {
+    if (!empresaToDeactivate) return;
+
+    try {
+      const res = await fetch(`/api/empresas/${empresaToDeactivate.id}`, { method: 'DELETE' });
+      const data = await res.json();
+
+      if (!data.success) {
+        throw new Error(data.error || 'No se pudo desactivar la empresa.');
+      }
+
+      toast.success('Empresa desactivada correctamente.');
+      setEmpresaToDeactivate(null);
+      await fetchEmpresas();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Error al desactivar la empresa.');
+    }
+  };
+
+  const deactivateArea = async () => {
+    if (!areaToDeactivate) return;
+
+    try {
+      const res = await fetch(`/api/areas/${areaToDeactivate.id}`, { method: 'DELETE' });
+      const data = await res.json();
+
+      if (!data.success) {
+        throw new Error(data.error || 'No se pudo desactivar el área.');
+      }
+
+      toast.success('Área desactivada correctamente.');
+      setAreaToDeactivate(null);
+      await fetchAreas();
+      await fetchKPIs();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Error al desactivar el área.');
+    }
+  };
+
+  const deactivateProfile = async () => {
+    if (!profileToDeactivate) return;
+
+    try {
+      const res = await fetch(`/api/profiles/${profileToDeactivate.id}`, { method: 'DELETE' });
+      const data = await res.json();
+
+      if (!data.success) {
+        throw new Error(data.error || 'No se pudo desactivar el trabajador.');
+      }
+
+      toast.success('Trabajador desactivado correctamente.');
+      setProfileToDeactivate(null);
+      await fetchProfiles();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Error al desactivar el trabajador.');
+    }
+  };
+
   const getSemaforoColor = (semaforo: string) => {
     switch (semaforo?.toLowerCase()) {
       case 'verde': return 'var(--color-verde)';
@@ -158,34 +353,39 @@ function App() {
     return matchArea && matchSearch;
   });
 
-  const groupedKpis = filteredKpis.reduce((acc: KpiGroup, kpi: KPI) => {
-    if (!acc[kpi.area]) acc[kpi.area] = [];
-    acc[kpi.area].push(kpi);
+  const groupedKpis = areas.reduce((acc: KpiGroup, area: Area) => {
+    acc[area.nombre] = filteredKpis.filter(kpi => kpi.area === area.nombre);
     return acc;
   }, {});
 
-  const areasList = Array.from(new Set(kpis.map(k => k.area)));
-  const availableYears = Array.from({ length: 3 }, (_, index) => String(new Date().getFullYear() + index));
+  // Add a "General" group if there are KPIs without a matching area or if no areas are defined
+  const kpisWithoutArea = filteredKpis.filter(kpi => !areas.some(a => a.nombre === kpi.area));
+  if (kpisWithoutArea.length > 0 || areas.length === 0) {
+    groupedKpis['General'] = [...(groupedKpis['General'] || []), ...kpisWithoutArea];
+  }
 
+  const areasList = areas.map(a => a.nombre);
+  const selectedEmpresa = empresas.find((empresa) => empresa.id === selectedEmpresaId) ?? null;
+  const availableYears = Array.from({ length: 3 }, (_, index) => String(new Date().getFullYear() + index));
   const startTour = () => {
     const driverObj = driver({
       showProgress: true,
       nextBtnText: 'Siguiente',
-      prevBtnText: 'AtrÃ¡s',
+      prevBtnText: 'Atrás',
       doneBtnText: 'Terminar',
       popoverClass: 'driverjs-theme',
       steps: [
         { 
           popover: { 
-            title: '<div style="font-size: 1.25rem; color: #3b82f6;">ðŸ¢ Bienvenido al Sistema de KPIs</div>', 
-            description: '<div style="text-align:center; padding: 0.5rem 0;"><img src="https://cdn-icons-png.flaticon.com/512/3204/3204094.png" style="width: 70px; margin-bottom: 10px;" /><p style="font-size: 0.95rem; line-height: 1.6; text-align: left;"><b>Â¿Para quÃ© sirve este panel?</b><br/>Es tu centro de operaciones oficial. AquÃ­ la empresa mide, almacena y evalÃºa el desempeÃ±o de cada mÃ©trica clave mensual. <br/><br/><i>Te guiaremos rÃ¡pidamente sobre cÃ³mo utilizarlo.</i></p></div>'
+            title: '<div style="font-size: 1.25rem; color: #3b82f6;">🏢 Bienvenido al Sistema de KPIs</div>', 
+            description: '<div style="text-align:center; padding: 0.5rem 0;"><img src="https://cdn-icons-png.flaticon.com/512/3204/3204094.png" style="width: 70px; margin-bottom: 10px;" /><p style="font-size: 0.95rem; line-height: 1.6; text-align: left;"><b>¿Para qué sirve este panel?</b><br/>Es tu centro de operaciones oficial. Aquí la empresa mide, almacena y evalúa el desempeño de cada métrica clave mensual. <br/><br/><i>Te guiaremos rápidamente sobre cómo utilizarlo.</i></p></div>'
           }
         },
         { 
           element: '#tour-filters', 
           popover: { 
-            title: 'ðŸ” Control de Tiempo y Ãrea', 
-            description: '<div style="font-size: 0.9rem; line-height: 1.5;"><p>Las metas cambian cada mes. Escoge aquÃ­ tu <b>AÃ±o</b> y <b>Mes</b> objetivo. <br/><br/>Si el mes no tiene mediciones previas, verÃ¡s tarjetas vacÃ­as en color gris listas para ser llenadas.</p></div>', 
+            title: '🔍 Control de Tiempo y Área', 
+            description: '<div style="font-size: 0.9rem; line-height: 1.5;"><p>Las metas cambian cada mes. Escoge aquí tu <b>Año</b> y <b>Mes</b> objetivo. <br/><br/>Si el mes no tiene mediciones previas, verás tarjetas vacías en color gris listas para ser llenadas.</p></div>', 
             side: "bottom", 
             align: 'start' 
           }
@@ -193,8 +393,8 @@ function App() {
         { 
           element: '#tour-kpi-grid', 
           popover: { 
-            title: 'ðŸ“Š Tarjetas de Rendimiento', 
-            description: '<div style="font-size: 0.9rem; line-height: 1.5;"><p>Cada bloque representa un KPI Oficial. En la parte superior derecha ves el tipo de <b>FÃ³rmula</b> (ej. Porcentaje, Documental) y abajo el valor arrojado.</p></div>', 
+            title: '📊 Tarjetas de Rendimiento', 
+            description: '<div style="font-size: 0.9rem; line-height: 1.5;"><p>Cada bloque representa un KPI Oficial. En la parte superior derecha ves el tipo de <b>Fórmula</b> (ej. Porcentaje, Documental) y abajo el valor arrojado.</p></div>', 
             side: "top", 
             align: 'start' 
           }
@@ -202,8 +402,8 @@ function App() {
         { 
           element: '.kpi-status', 
           popover: { 
-            title: 'ðŸš¥ El SemÃ¡foro', 
-            description: '<div style="display: grid; grid-template-columns: 20px 1fr; gap: 8px; font-size: 0.85rem; line-height: 1.4; margin-top: 10px;"><span style="color:#10b981;font-size:18px;">ðŸŸ¢</span><span><b>Sano:</b> AlcanzÃ³ o superÃ³ la meta definida.</span><span style="color:#f59e0b;font-size:18px;">ðŸŸ¡</span><span><b>Alerta:</b> MÃ©trica por debajo del estÃ¡ndar Ã³ptimo.</span><span style="color:#ef4444;font-size:18px;">ðŸ”´</span><span><b>Riesgo:</b> Rendimiento inaceptable.</span><span style="color:#94a3b8;font-size:18px;">âšª</span><span><b>Gris:</b> Pendiente de captura este mes.</span></div>', 
+            title: '🚦 El Semáforo', 
+            description: '<div style="display: grid; grid-template-columns: 20px 1fr; gap: 8px; font-size: 0.85rem; line-height: 1.4; margin-top: 10px;"><span style="color:#10b981;font-size:18px;">🟢</span><span><b>Sano:</b> Alcanzó o superó la meta definida.</span><span style="color:#f59e0b;font-size:18px;">🟡</span><span><b>Alerta:</b> Métrica por debajo del estándar óptimo.</span><span style="color:#ef4444;font-size:18px;">🔴</span><span><b>Riesgo:</b> Rendimiento inaceptable.</span><span style="color:#94a3b8;font-size:18px;">⚪</span><span><b>Gris:</b> Pendiente de captura este mes.</span></div>', 
             side: "top", 
             align: 'start' 
           }
@@ -211,8 +411,8 @@ function App() {
         { 
           element: '.kpi-edit-btn', 
           popover: { 
-            title: 'ðŸ“ Ingresar o Actualizar Datos', 
-            description: '<div style="font-size: 0.95rem; line-height: 1.5;"><p>Al pulsar <b>Capturar</b>, se abrirÃ¡ un formulario inteligente.</p><br/><div style="background:rgba(59,130,246,0.1); padding:10px; border-radius:8px; border:1px solid rgba(59,130,246,0.2);">âœ”ï¸ Si es KPI Documental: palomea casillas.<br/>âœ”ï¸ Si es KPI NumÃ©rico: ingresa cifras exactas.<br/>âœ”ï¸ Si es Fecha: agrega el calendario de entregas.</div></div>', 
+            title: '📝 Ingresar o Actualizar Datos', 
+            description: '<div style="font-size: 0.95rem; line-height: 1.5;"><p>Al pulsar <b>Capturar</b>, se abrirá un formulario inteligente.</p><br/><div style="background:rgba(59,130,246,0.1); padding:10px; border-radius:8px; border:1px solid rgba(59,130,246,0.2);">✔️ Si es KPI Documental: palomea casillas.<br/>✔️ Si es KPI Numérico: ingresa cifras exactas.<br/>✔️ Si es Fecha: agrega el calendario de entregas.</div></div>', 
             side: "bottom", 
             align: 'start' 
           }
@@ -220,8 +420,8 @@ function App() {
         { 
           element: '.kpi-card', 
           popover: { 
-            title: 'ðŸ§Š HistÃ³rico Interactivo 3D', 
-            description: '<div style="font-size: 0.95rem; line-height: 1.5;"><p>Para realizar <b>anÃ¡lisis a largo plazo</b>, simplemente pulsa sobre el <i>fondo de cualquier tarjeta</i>.</p><p style="margin-top: 10px; color: #3b82f6;"><b>Â¡Magia!</b> âœ¨ Se desplegarÃ¡ una grÃ¡fica en 3D con las alturas proporcionales de todos los meses de este aÃ±o.</p></div>', 
+            title: '🧊 Histórico Interactivo 3D', 
+            description: '<div style="font-size: 0.95rem; line-height: 1.5;"><p>Para realizar <b>análisis a largo plazo</b>, simplemente pulsa sobre el <i>fondo de cualquier tarjeta</i>.</p><p style="margin-top: 10px; color: #3b82f6;"><b>¡Magia!</b> ✨ Se desplegará una gráfica en 3D con las alturas proporcionales de todos los meses de este año.</p></div>', 
             side: "right", 
             align: 'start' 
           }
@@ -229,8 +429,8 @@ function App() {
         ...(isAdminView ? [{ 
           element: '.btn-nuevo-kpi', 
           popover: { 
-            title: 'âœ¨ Creador de KPIs', 
-            description: '<div style="font-size: 0.95rem; line-height: 1.5;"><p>Â¿Necesitas medir algo nuevo? Utiliza nuestro <b>asistente inteligente</b>.</p><br/><p>PodrÃ¡s definir parÃ¡metros, elegir cÃ³mo se calcularÃ¡ (conteo, verificaciÃ³n documental, fechas lÃ­mite) y ajustar los umbrales de tu semÃ¡foro de manera intuitiva.</p></div>', 
+            title: '✨ Creador de KPIs', 
+            description: '<div style="font-size: 0.95rem; line-height: 1.5;"><p>¿Necesitas medir algo nuevo? Utiliza nuestro <b>asistente inteligente</b>.</p><br/><p>Podrás definir parámetros, elegir cómo se calculará (conteo, verificación documental, fechas límite) y ajustar los umbrales de tu semáforo de manera intuitiva.</p></div>', 
             side: 'bottom' as const, 
             align: 'start' as const 
           }
@@ -258,13 +458,41 @@ function App() {
                 <HelpCircle size={18} />
               </button>
               {isAdminView && (
-                <button
-                  onClick={() => setShowCreateKpi(true)}
-                  className="btn-nuevo-kpi"
-                  data-tooltip="Crear nuevo KPI personalizado"
-                >
-                  <PlusCircle size={16} /> Nuevo KPI
-                </button>
+                <>
+                  {isAdminAuthenticated && (
+                    <button
+                      onClick={() => setSelectedEmpresaId('')}
+                      className="btn-nuevo-kpi"
+                      style={{ background: 'var(--accent-color)', color: 'white', border: 'none' }}
+                      data-tooltip="Volver al Hub Multiempresa"
+                    >
+                      <LayoutGrid size={16} /> Hub de Empresas
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setShowCreateEmpresa(true)}
+                    className="btn-nuevo-kpi"
+                    data-tooltip="Crear una nueva empresa"
+                  >
+                    <PlusCircle size={16} /> Nueva empresa
+                  </button>
+                  <button
+                    onClick={() => setShowCreateKpi(true)}
+                    className="btn-nuevo-kpi"
+                    data-tooltip="Crear nuevo KPI personalizado"
+                  >
+                    <PlusCircle size={16} /> Nuevo KPI
+                  </button>
+                  {isAdminAuthenticated && (
+                    <button
+                      onClick={handleAdminLogout}
+                      className="btn-nuevo-kpi"
+                      style={{ color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.3)' }}
+                    >
+                      <LogOut size={16} /> Cerrar Sesión
+                    </button>
+                  )}
+                </>
               )}
             </div>
             <p className="subtitle">Monitoreo inteligente de indicadores clave</p>
@@ -272,8 +500,27 @@ function App() {
         </div>
         
         <div className="header-filters" id="tour-filters">
+          <div className="filter-group">
+            <span className="filter-label"><BarChart3 size={14} /> EMPRESA</span>
+            <select
+              value={selectedEmpresaId}
+              onChange={(e) => {
+                setProfiles([]);
+                setAreas([]);
+                setSelectedEmpresaId(e.target.value);
+              }}
+            >
+              <option value="">Selecciona una empresa</option>
+              {empresas.map((empresa) => (
+                <option key={empresa.id} value={empresa.id}>
+                  {empresa.nombre}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <div className="filter-group global-search">
-             <span className="filter-label"><Search size={14} /> BÃšSQUEDA</span>
+             <span className="filter-label"><Search size={14} /> BÚSQUEDA</span>
              <div style={{ position: 'relative' }}>
                <Search size={16} className="search-icon" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-gris-claro)' }} />
                <input 
@@ -287,9 +534,9 @@ function App() {
           </div>
           
           <div className="filter-group">
-            <span className="filter-label"><Filter size={14} /> ÃREA</span>
+            <span className="filter-label"><Filter size={14} /> ÁREA</span>
             <select value={selectedArea} onChange={(e) => setSelectedArea(e.target.value)}>
-              <option value="Todas">Todas las Ã¡reas</option>
+              <option value="Todas">Todas las áreas</option>
               {areasList.map(a => <option key={a as string} value={a as string}>{a}</option>)}
             </select>
           </div>
@@ -331,11 +578,190 @@ function App() {
         </div>
       </header>
 
+      {isAdminView && !isAdminAuthenticated ? (
+        <main className="dashboard-main" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+          <div className="capture-modal__content" style={{ maxWidth: '400px', width: '100%', position: 'static', transform: 'none' }}>
+            <div className="capture-modal__header">
+              <h2 className="capture-modal__title">Acceso Administrativo</h2>
+            </div>
+            <form onSubmit={handleAdminLogin} className="capture-modal__body" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                Ingresa la contraseña para gestionar empresas, áreas y trabajadores.
+              </p>
+              <div className="input-group">
+                <label className="input-label">Contraseña</label>
+                <input 
+                  type="password" 
+                  className="capture-input" 
+                  placeholder="••••••••"
+                  value={adminPassword}
+                  onChange={(e) => setAdminPassword(e.target.value)}
+                  autoFocus
+                />
+              </div>
+              <button type="submit" className="btn-primary" style={{ width: '100%' }}>
+                Entrar al Panel
+              </button>
+            </form>
+          </div>
+        </main>
+      ) : isAdminView && isAdminAuthenticated && !selectedEmpresaId ? (
+        <main className="dashboard-main">
+          <CompanyHub 
+            empresas={empresas}
+            onSelect={(id) => setSelectedEmpresaId(id)}
+            onEdit={(empresa) => setEmpresaToEdit(empresa)}
+            onDeactivate={(empresa) => setEmpresaToDeactivate(empresa)}
+            onAdd={() => setShowCreateEmpresa(true)}
+          />
+        </main>
+      ) : (
+        <>
+          {isAdminView && isAdminAuthenticated && selectedEmpresaId && (
+            <section className="admin-panel">
+              <div className="admin-panel__header" style={{ marginBottom: '2rem' }}>
+                <button 
+                  className="btn-secondary" 
+                  onClick={() => setSelectedEmpresaId('')}
+                  style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                >
+                  <LayoutGrid size={18} /> Volver al Hub de Empresas
+                </button>
+              </div>
+
+              <div className="admin-summary-grid">
+                <article className="admin-summary-card">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <div style={{ background: 'rgba(59, 130, 246, 0.1)', padding: '8px', borderRadius: '10px', color: 'var(--accent-color)' }}>
+                       <Briefcase size={20} />
+                    </div>
+                    <span className="admin-summary-label">Empresa</span>
+                  </div>
+                  <strong>{selectedEmpresa?.nombre ?? 'Sin seleccionar'}</strong>
+                </article>
+                <article className="admin-summary-card">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <div style={{ background: 'rgba(16, 185, 129, 0.1)', padding: '8px', borderRadius: '10px', color: 'var(--color-verde)' }}>
+                       <LayoutGrid size={20} />
+                    </div>
+                    <span className="admin-summary-label">Áreas</span>
+                  </div>
+                  <strong>{areas.length}</strong>
+                </article>
+                <article className="admin-summary-card">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <div style={{ background: 'rgba(245, 158, 11, 0.1)', padding: '8px', borderRadius: '10px', color: 'var(--color-amarillo)' }}>
+                       <Users size={20} />
+                    </div>
+                    <span className="admin-summary-label">Trabajadores</span>
+                  </div>
+                  <strong>{profiles.length}</strong>
+                </article>
+              </div>
+
+              <div className="admin-panel-section">
+                <div className="admin-section-header">
+                  <div>
+                    <h2>Áreas Operativas</h2>
+                    <p>Gestiona las divisiones de la empresa para agrupar indicadores.</p>
+                  </div>
+                  <button className="btn-icon-label primary" onClick={() => setShowCreateArea(true)}>
+                    <PlusCircle size={18} /> Nueva Área
+                  </button>
+                </div>
+
+                <div className="chip-list">
+                  {areas.length === 0 ? (
+                    <div style={{ textAlign: 'center', width: '100%', padding: '2rem', color: 'var(--text-muted)' }}>
+                       <Inbox size={40} style={{ opacity: 0.2, marginBottom: '1rem' }} />
+                       <p>No hay áreas configuradas aún.</p>
+                    </div>
+                  ) : (
+                    areas.map((area) => (
+                      <div key={area.id} className="admin-chip">
+                        <span>{area.nombre}</span>
+                        <div style={{ display: 'flex', gap: '4px' }}>
+                          <button className="chip-action" onClick={() => setAreaToEdit(area)} title="Editar">
+                            <Edit3 size={14} />
+                          </button>
+                          <button className="chip-action chip-action--danger" onClick={() => setAreaToDeactivate(area)} title="Eliminar">
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              <div className="admin-panel-section">
+                <div className="admin-section-header">
+                  <div>
+                    <h2>Plantilla de Trabajadores</h2>
+                    <p>Administra los colaboradores y sus accesos a métricas específicas.</p>
+                  </div>
+                  <button className="btn-icon-label primary" onClick={() => setShowCreateWorker(true)}>
+                    <PlusCircle size={18} /> Nuevo Colaborador
+                  </button>
+                </div>
+
+                <div className="admin-table-wrapper" style={{ background: '#f8fafc', borderRadius: '24px', padding: '1rem', border: '1px solid #f1f5f9' }}>
+                  <table className="modern-table">
+                    <thead>
+                      <tr>
+                        <th>Colaborador</th>
+                        <th>Contacto</th>
+                        <th style={{ textAlign: 'right' }}>Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {profiles.length === 0 ? (
+                        <tr>
+                          <td colSpan={3} style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
+                            <Users size={40} style={{ opacity: 0.2, marginBottom: '1rem' }} />
+                            <p>No se han registrado trabajadores para esta empresa.</p>
+                          </td>
+                        </tr>
+                      ) : (
+                        profiles.map((profile) => (
+                          <tr key={profile.id}>
+                            <td>
+                              <div className="user-badge">
+                                <div className="user-avatar">
+                                  {profile.nombre.charAt(0).toUpperCase()}
+                                </div>
+                                <span style={{ fontWeight: 700 }}>{profile.nombre}</span>
+                              </div>
+                            </td>
+                            <td style={{ color: 'var(--text-muted)', fontFamily: 'monospace' }}>{profile.email}</td>
+                            <td>
+                              <div className="action-group" style={{ justifyContent: 'flex-end' }}>
+                                <button className="btn-icon-label" onClick={() => setProfileForAssignments(profile)}>
+                                   Asignaciones
+                                </button>
+                                <button className="btn-icon-label" onClick={() => setProfileToEdit(profile)}>
+                                  <Edit3 size={14} />
+                                </button>
+                                <button className="btn-icon-label danger" onClick={() => setProfileToDeactivate(profile)}>
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+        </section>
+      )}
+
       <main className="dashboard-main" id="tour-kpi-grid">
         {loading && (
            <div className="empty-state">
               <div className="spinner"></div>
-              <p>Cargando informaciÃ³n del tablero...</p>
+              <p>Cargando información del tablero...</p>
            </div>
         )}
         
@@ -348,112 +774,128 @@ function App() {
         {!loading && !error && Object.keys(groupedKpis).length === 0 && (
            <div className="empty-state">
               <Inbox size={48} style={{ color: 'var(--text-muted)', opacity: 0.5 }} />
-              <p>No se encontraron KPIs con los parÃ¡metros seleccionados.</p>
+              {kpis.length === 0 ? (
+                <>
+                  <p>Esta empresa aún no tiene KPIs registrados.</p>
+                  {isAdminView && (
+                    <button className="btn-primary" onClick={() => setShowCreateKpi(true)} style={{ marginTop: '1rem' }}>
+                      <PlusCircle size={16} /> Crear el primer KPI
+                    </button>
+                  )}
+                </>
+              ) : (
+                <p>No se encontraron KPIs con los parámetros de búsqueda seleccionados.</p>
+              )}
            </div>
         )}
 
         {!loading && !error && Object.keys(groupedKpis).map(area => (
           <section key={area} className="area-section">
             <h2 className="area-title">{area}</h2>
-            <div className="kpi-grid">
-              {groupedKpis[area].map((kpi: KPI) => (
-                <div 
-                  key={kpi.resultado_id || kpi.kpi_id} 
-                  className="kpi-card hover-enabled"
-                  style={{ 
-                    '--card-color': getSemaforoColor(kpi.semaforo), 
-                    '--card-rgb': getSemaforoRgb(kpi.semaforo) 
-                  } as React.CSSProperties}
-                  onClick={() => setKpiForHistory(kpi)}
-                >
-                  <div className="kpi-card-header">
-                    <span className="kpi-formula-type">{kpi.formula_tipo.replace(/[_]/g, ' ').toUpperCase()}</span>
-                    <button 
-                      className="kpi-info-icon" 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        // Abrimos el modal detallado que ya tiene la lÃ³gica de ayuda
-                        setKpiForHistory(kpi);
-                      }}
-                      data-tooltip="MÃ©trica e Historial"
-                      style={{ background: 'none', border: 'none', padding: '4px', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center' }}
-                    >
-                      <HelpCircle size={14} />
-                    </button>
-                  </div>
-                  <h3 className="kpi-name">{kpi.kpi_nombre}</h3>
-                  
-                  <div className="kpi-card-actions" onClick={e => e.stopPropagation()} style={{ display: 'flex', gap: '8px' }}>
-                     <button className={kpi.valor === null ? "kpi-edit-btn primary-pulse" : "kpi-edit-btn"} style={{ marginTop: 0 }} onClick={() => setCaptureKpi(kpi)}>
-                       {kpi.valor === null ? <><PlusCircle size={14} /> Capturar</> : <><Edit3 size={14} /> Actualizar</>}
-                     </button>
-                     <button 
-                       className="kpi-edit-btn btn-delete" 
-                       style={{ marginTop: 0, padding: '0.4rem', color: kpi.es_borrable ? '#ef4444' : '#94a3b8', border: kpi.es_borrable ? '1px solid rgba(239, 68, 68, 0.3)' : undefined }} 
-                       onClick={() => handleDeleteKpiRequest(kpi)}
-                       data-tooltip={kpi.es_borrable ? "Eliminar KPI" : "KPI de Sistema"}
-                     >
-                       <Trash2 size={16} />
-                     </button>
-                  </div>
+            {groupedKpis[area].length === 0 ? (
+              <p className="empty-area-copy" style={{ color: 'var(--text-muted)', fontStyle: 'italic', fontSize: '0.9rem', padding: '1rem' }}>
+                Sin indicadores asignados a esta área este periodo.
+              </p>
+            ) : (
+              <div className="kpi-grid">
+                {groupedKpis[area].map((kpi: KPI) => (
+                  <div 
+                    key={kpi.resultado_id || kpi.kpi_id} 
+                    className="kpi-card hover-enabled"
+                    style={{ 
+                      '--card-color': getSemaforoColor(kpi.semaforo), 
+                      '--card-rgb': getSemaforoRgb(kpi.semaforo) 
+                    } as React.CSSProperties}
+                    onClick={() => setKpiForHistory(kpi)}
+                  >
+                    <div className="kpi-card-header">
+                      <span className="kpi-formula-type">{kpi.formula_tipo.replace(/[_]/g, ' ').toUpperCase()}</span>
+                      <button 
+                        className="kpi-info-icon" 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setKpiForHistory(kpi);
+                        }}
+                        data-tooltip="Métrica e Historial"
+                        style={{ background: 'none', border: 'none', padding: '4px', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center' }}
+                      >
+                        <HelpCircle size={14} />
+                      </button>
+                    </div>
+                    <h3 className="kpi-name">{kpi.kpi_nombre}</h3>
+                    
+                    <div className="kpi-card-actions" onClick={e => e.stopPropagation()} style={{ display: 'flex', gap: '8px' }}>
+                       <button className={kpi.valor === null ? "kpi-edit-btn primary-pulse" : "kpi-edit-btn"} style={{ marginTop: 0 }} onClick={() => setCaptureKpi(kpi)}>
+                         {kpi.valor === null ? <><PlusCircle size={14} /> Capturar</> : <><Edit3 size={14} /> Actualizar</>}
+                       </button>
+                       <button 
+                         className="kpi-edit-btn btn-delete" 
+                         style={{ marginTop: 0, padding: '0.4rem', color: kpi.es_borrable ? '#ef4444' : '#94a3b8', border: kpi.es_borrable ? '1px solid rgba(239, 68, 68, 0.3)' : undefined }} 
+                         onClick={() => handleDeleteKpiRequest(kpi)}
+                         data-tooltip={kpi.es_borrable ? "Eliminar KPI" : "KPI de Sistema"}
+                       >
+                         <Trash2 size={16} />
+                       </button>
+                    </div>
 
-                  <div className="kpi-card-footer" style={{ marginTop: 'auto', paddingTop: '1.5rem', width: '100%' }}>
-                    {/* Caso: GrÃ¡fica Circular (Para Porcentajes y Binarios) */}
-                    {(kpi.tipo_resultado === 'porcentaje' || kpi.tipo_resultado === 'binario') ? (
-                      <div className="kpi-donut-container">
-                        <div className="radial-progress-wrapper">
-                          <div 
-                            className="radial-progress" 
-                            style={{ 
-                              '--progress': kpi.valor === null ? 0 : (kpi.tipo_resultado === 'binario' ? (kpi.valor > 0 ? 100 : 0) : kpi.valor) 
-                            } as React.CSSProperties}
-                          >
-                            <div className="radial-progress-inner">
-                              {kpi.valor !== null ? (kpi.tipo_resultado === 'binario' ? (kpi.valor > 0 ? '100%' : '0%') : `${kpi.valor}%`) : '--'}
+                    <div className="kpi-card-footer" style={{ marginTop: 'auto', paddingTop: '1.5rem', width: '100%' }}>
+                      {(kpi.tipo_resultado === 'porcentaje' || kpi.tipo_resultado === 'binario') ? (
+                        <div className="kpi-donut-container">
+                          <div className="radial-progress-wrapper">
+                            <div 
+                              className="radial-progress" 
+                              style={{ 
+                                '--progress': kpi.valor === null ? 0 : (kpi.tipo_resultado === 'binario' ? (kpi.valor > 0 ? 100 : 0) : kpi.valor) 
+                              } as React.CSSProperties}
+                            >
+                              <div className="radial-progress-inner">
+                                {kpi.valor !== null ? (kpi.tipo_resultado === 'binario' ? (kpi.valor > 0 ? '100%' : '0%') : `${kpi.valor}%`) : '--'}
+                              </div>
+                            </div>
+                            <div>
+                              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600, marginBottom: '4px' }}>
+                                {kpi.tipo_resultado === 'binario' ? 'CUMPLIMIENTO' : 'PROGRESO'}
+                              </div>
+                              <div className="kpi-status">
+                                <span className="status-dot"></span>
+                                {kpi.semaforo === 'gris' ? 'Pendiente' : kpi.semaforo.charAt(0).toUpperCase() + kpi.semaforo.slice(1)}
+                              </div>
                             </div>
                           </div>
-                          <div>
-                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600, marginBottom: '4px' }}>
-                              {kpi.tipo_resultado === 'binario' ? 'CUMPLIMIENTO' : 'PROGRESO'}
+                        </div>
+                      ) : (
+                        <div style={{ width: '100%' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                            <div className="kpi-result">
+                              <span className="kpi-value">{kpi.valor !== null ? kpi.valor : '--'}</span>
+                              {kpi.valor !== null && <span className="kpi-unit" style={{ marginLeft: '4px' }}>{kpi.unidad}</span>}
                             </div>
                             <div className="kpi-status">
                               <span className="status-dot"></span>
                               {kpi.semaforo === 'gris' ? 'Pendiente' : kpi.semaforo.charAt(0).toUpperCase() + kpi.semaforo.slice(1)}
                             </div>
                           </div>
-                        </div>
-                      </div>
-                    ) : (
-                      /* Caso: GrÃ¡fica Lineal (Para Conteo, Montos, Promedios) */
-                      <div style={{ width: '100%' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-                          <div className="kpi-result">
-                            <span className="kpi-value">{kpi.valor !== null ? kpi.valor : '--'}</span>
-                            {kpi.valor !== null && <span className="kpi-unit" style={{ marginLeft: '4px' }}>{kpi.unidad}</span>}
-                          </div>
-                          <div className="kpi-status">
-                            <span className="status-dot"></span>
-                            {kpi.semaforo === 'gris' ? 'Pendiente' : kpi.semaforo.charAt(0).toUpperCase() + kpi.semaforo.slice(1)}
+                          <div className="linear-progress-container" title="Progreso relativo">
+                            <div 
+                              className="linear-progress-bar" 
+                              style={{ 
+                                width: kpi.valor === null ? '0%' : (kpi.semaforo === 'verde' ? '100%' : (kpi.semaforo === 'amarillo' ? '65%' : '35%')),
+                                opacity: kpi.valor === null ? 0.3 : 1
+                              }}
+                            ></div>
                           </div>
                         </div>
-                        <div className="linear-progress-container" title="Progreso relativo">
-                          <div 
-                            className="linear-progress-bar" 
-                            style={{ 
-                              width: kpi.valor === null ? '0%' : (kpi.semaforo === 'verde' ? '100%' : (kpi.semaforo === 'amarillo' ? '65%' : '35%')),
-                              opacity: kpi.valor === null ? 0.3 : 1
-                            }}
-                          ></div>
-                        </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </section>
         ))}
       </main>
+        </>
+      )}
 
       {captureKpi && (
          <CaptureModal 
@@ -473,10 +915,75 @@ function App() {
          />
       )}
 
+      {(showCreateEmpresa || empresaToEdit) && (
+        <CreateEmpresaModal
+          empresa={empresaToEdit}
+          onClose={() => {
+            setShowCreateEmpresa(false);
+            setEmpresaToEdit(null);
+          }}
+          onSuccess={async (empresa) => {
+            setShowCreateEmpresa(false);
+            setEmpresaToEdit(null);
+            await fetchEmpresas();
+            if (!empresaToEdit) {
+              setProfiles([]);
+              setAreas([]);
+              setSelectedEmpresaId(empresa.id);
+            }
+          }}
+        />
+      )}
+
+      {(showCreateArea || areaToEdit) && (
+        <CreateAreaModal
+          empresaId={selectedEmpresaId}
+          area={areaToEdit}
+          onClose={() => {
+            setShowCreateArea(false);
+            setAreaToEdit(null);
+          }}
+          onSuccess={() => {
+            setShowCreateArea(false);
+            setAreaToEdit(null);
+            fetchAreas();
+          }}
+        />
+      )}
+
       {showCreateKpi && (
         <CreateKpiModal
+          empresaId={selectedEmpresaId}
           onClose={() => setShowCreateKpi(false)}
           onSuccess={() => { setShowCreateKpi(false); fetchKPIs(); }}
+        />
+      )}
+
+      {(showCreateWorker || profileToEdit) && (
+        <CreateWorkerModal
+          empresaId={selectedEmpresaId}
+          profile={profileToEdit}
+          onClose={() => {
+            setShowCreateWorker(false);
+            setProfileToEdit(null);
+          }}
+          onSuccess={() => {
+            setShowCreateWorker(false);
+            setProfileToEdit(null);
+            fetchProfiles();
+          }}
+        />
+      )}
+
+      {profileForAssignments && (
+        <WorkerAssignmentsModal
+          empresaId={selectedEmpresaId}
+          profile={profileForAssignments}
+          onClose={() => setProfileForAssignments(null)}
+          onSuccess={() => {
+            setProfileForAssignments(null);
+            fetchProfiles();
+          }}
         />
       )}
 
@@ -485,13 +992,39 @@ function App() {
           title="Eliminar KPI Personalizado"
           message={
             <>
-              Â¿EstÃ¡s seguro de que deseas eliminar permanentemente el KPI <strong style={{ color: '#0f172a' }}>"{kpiToDelete.kpi_nombre}"</strong>?
+              ¿Estás seguro de que deseas eliminar permanentemente el KPI <strong style={{ color: '#0f172a' }}>"{kpiToDelete.kpi_nombre}"</strong>?
               <br/><br/>
-              Esta acciÃ³n es irreversible y eliminarÃ¡ todo su historial de capturas.
+              Esta acción es irreversible y eliminará todo su historial de capturas.
             </>
           }
           onConfirm={confirmDeleteKpi}
           onCancel={() => setKpiToDelete(null)}
+        />
+      )}
+      {empresaToDeactivate && (
+        <ConfirmModal
+          title="Desactivar Empresa"
+          message={`¿Estás seguro de que deseas desactivar la empresa "${empresaToDeactivate.nombre}"? Esta acción ocultará la empresa y todos sus datos asociados.`}
+          onConfirm={deactivateEmpresa}
+          onCancel={() => setEmpresaToDeactivate(null)}
+        />
+      )}
+
+      {areaToDeactivate && (
+        <ConfirmModal
+          title="Desactivar Área"
+          message={`¿Estás seguro de que deseas desactivar el área "${areaToDeactivate.nombre}"?`}
+          onConfirm={deactivateArea}
+          onCancel={() => setAreaToDeactivate(null)}
+        />
+      )}
+
+      {profileToDeactivate && (
+        <ConfirmModal
+          title="Desactivar Trabajador"
+          message={`¿Estás seguro de que deseas desactivar a ${profileToDeactivate.nombre}?`}
+          onConfirm={deactivateProfile}
+          onCancel={() => setProfileToDeactivate(null)}
         />
       )}
     </div>
