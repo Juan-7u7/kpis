@@ -183,13 +183,6 @@ export default function CreateKpiModal({ onClose, onSuccess }: CreateKpiModalPro
       .catch(() => toast.error('No se pudieron cargar las areas'));
   }, []);
 
-  useEffect(() => {
-    if (formulaTipo !== 'formula_personalizada') return;
-    if (customTemplate === 'manual') return;
-
-    setCustomExpression(buildExpressionFromTemplate(customTemplate, customVariables));
-  }, [customTemplate, customVariables, formulaTipo]);
-
   const selectedFormula = FORMULA_OPTIONS.find(f => f.value === formulaTipo);
   const limiteDiasValue = parseNumericInput(limiteDias, 2);
   const verdeMinValue = parseNumericInput(verdeMin, 100);
@@ -202,29 +195,53 @@ export default function CreateKpiModal({ onClose, onSuccess }: CreateKpiModalPro
     ? validateCustomFormula(customFormulaConfig)
     : { valid: true as const };
 
+  const syncCustomExpression = (
+    template: CustomTemplateType,
+    variables: CustomVariableForm[],
+    activeFormulaType: FormulaType | ''
+  ) => {
+    if (activeFormulaType !== 'formula_personalizada') return;
+    if (template === 'manual') return;
+
+    setCustomExpression(buildExpressionFromTemplate(template, variables));
+  };
+
   const updateCustomVariable = (id: string, field: 'label' | 'key' | 'helpText', value: string) => {
-    setCustomVariables((current) => current.map((variable, index) => {
-      if (variable.id !== id) return variable;
+    setCustomVariables((current) => {
+      const nextVariables = current.map((variable, index) => {
+        if (variable.id !== id) return variable;
 
-      if (field === 'label') {
-        const nextKey = normalizeFormulaKey(value, `variable_${index + 1}`);
-        return { ...variable, label: value, key: nextKey };
-      }
+        if (field === 'label') {
+          const nextKey = normalizeFormulaKey(value, `variable_${index + 1}`);
+          return { ...variable, label: value, key: nextKey };
+        }
 
-      if (field === 'key') {
-        return { ...variable, key: normalizeFormulaKey(value, `variable_${index + 1}`) };
-      }
+        if (field === 'key') {
+          return { ...variable, key: normalizeFormulaKey(value, `variable_${index + 1}`) };
+        }
 
-      return { ...variable, helpText: value };
-    }));
+        return { ...variable, helpText: value };
+      });
+
+      syncCustomExpression(customTemplate, nextVariables, formulaTipo);
+      return nextVariables;
+    });
   };
 
   const addCustomVariable = () => {
-    setCustomVariables((current) => [...current, createCustomVariable(current.length + 1)]);
+    setCustomVariables((current) => {
+      const nextVariables = [...current, createCustomVariable(current.length + 1)];
+      syncCustomExpression(customTemplate, nextVariables, formulaTipo);
+      return nextVariables;
+    });
   };
 
   const removeCustomVariable = (id: string) => {
-    setCustomVariables((current) => current.length <= 1 ? current : current.filter((variable) => variable.id !== id));
+    setCustomVariables((current) => {
+      const nextVariables = current.length <= 1 ? current : current.filter((variable) => variable.id !== id);
+      syncCustomExpression(customTemplate, nextVariables, formulaTipo);
+      return nextVariables;
+    });
   };
 
   const appendExpressionToken = (token: string) => {
@@ -598,9 +615,7 @@ export default function CreateKpiModal({ onClose, onSuccess }: CreateKpiModalPro
                         className={`formula-option-card ${customTemplate === option.value ? 'selected' : ''}`}
                         onClick={() => {
                           setCustomTemplate(option.value);
-                          if (option.value !== 'manual') {
-                            setCustomExpression(buildExpressionFromTemplate(option.value, customVariables));
-                          }
+                          syncCustomExpression(option.value, customVariables, formulaTipo);
                         }}
                         style={{ textAlign: 'left' }}
                       >

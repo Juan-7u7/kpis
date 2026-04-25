@@ -192,6 +192,7 @@ export default function CaptureModal({ kpi_id, anio, mes, onClose, onSuccess }: 
         <div style={{ background: 'rgba(59, 130, 246, 0.08)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(59, 130, 246, 0.2)', marginBottom: '1.5rem', marginTop: '1rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--accent-color)', fontWeight: 700, marginBottom: '0.5rem', fontSize: '0.9rem' }}>
             <HelpCircle size={16} /> GUÍA DE MEDICIÓN
+            {/* eslint-disable-next-line no-constant-binary-expression */}
             {false && (
               <div style={{ padding: '1rem 1.25rem 1.25rem' }}>
                 <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.75rem' }}>
