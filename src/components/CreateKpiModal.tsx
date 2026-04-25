@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, ChevronRight, ChevronLeft, Check, BarChart3, FileText, Hash, Clock, ToggleLeft, Sigma, Plus, Trash2, BookOpen, Lightbulb, Calculator, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { normalizeFormulaKey, validateCustomFormula, type CustomFormulaVariable } from '../lib/customFormula';
+import { normalizeFormulaKey, validateCustomFormula, evaluateCustomFormula, type CustomFormulaVariable } from '../lib/customFormula';
 
 interface Area {
   id: string;
@@ -184,6 +184,9 @@ export default function CreateKpiModal({ empresaId, onClose, onSuccess }: Create
   const [sentido, setSentido] = useState<'higher_is_better' | 'lower_is_better' | 'range_is_better'>('higher_is_better');
   const [fuenteDatos, setFuenteDatos] = useState('');
   const [fechaEntregaInfo, setFechaEntregaInfo] = useState('');
+  const [simulationValues, setSimulationValues] = useState<Record<string, string>>({});
+  const [simulationResult, setSimulationResult] = useState<number | null>(null);
+  const [simulationError, setSimulationError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!empresaId) return;
@@ -205,6 +208,29 @@ export default function CreateKpiModal({ empresaId, onClose, onSuccess }: Create
   const customFormulaValidation = formulaTipo === 'formula_personalizada'
     ? validateCustomFormula(customFormulaConfig)
     : { valid: true as const };
+
+  // Live simulation effect
+  useEffect(() => {
+    if (formulaTipo !== 'formula_personalizada' || !customFormulaValidation.valid) {
+      setSimulationResult(null);
+      setSimulationError(null);
+      return;
+    }
+
+    try {
+      const values: Record<string, number> = {};
+      customVariables.forEach(v => {
+        values[v.key] = parseFloat(simulationValues[v.id] || '0');
+      });
+      
+      const result = evaluateCustomFormula(customExpression, values);
+      setSimulationResult(result);
+      setSimulationError(null);
+    } catch (err) {
+      setSimulationResult(null);
+      setSimulationError(err instanceof Error ? err.message : 'Error al simular');
+    }
+  }, [customExpression, customVariables, simulationValues, formulaTipo, customFormulaValidation.valid]);
 
   const syncCustomExpression = (
     template: CustomTemplateType,
@@ -637,55 +663,123 @@ export default function CreateKpiModal({ empresaId, onClose, onSuccess }: Create
                     </div>
                   </div>
 
-                  <div style={{ display: 'grid', gap: '0.85rem', marginBottom: '1rem' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
                     {customVariables.map((variable, index) => (
-                      <div key={variable.id} style={{ border: '1px solid rgba(59, 130, 246, 0.15)', borderRadius: '14px', padding: '1rem', background: '#f8fbff' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                          <strong style={{ color: 'var(--text-main)' }}>Dato {index + 1}</strong>
+                      <div key={variable.id} className="premium-variable-card">
+                        <div className="pvc-header">
+                          <div className="pvc-tag">DATO {index + 1}</div>
                           <button
                             type="button"
-                            className="btn-secondary"
-                            style={{ padding: '0.4rem 0.75rem' }}
+                            className="pvc-delete"
                             onClick={() => removeCustomVariable(variable.id)}
                             disabled={customVariables.length <= 1}
                           >
-                            <Trash2 size={14} /> Quitar
+                            <Trash2 size={14} />
                           </button>
                         </div>
 
-                        <input
-                          className="field-input"
-                          type="text"
-                          placeholder={index === 0 ? 'Ej: Solicitudes resueltas' : 'Ej: Solicitudes recibidas'}
-                          value={variable.label}
-                          onChange={(e) => updateCustomVariable(variable.id, 'label', e.target.value)}
-                          style={{ marginBottom: '0.75rem' }}
-                        />
+                        <div className="pvc-body">
+                          <input
+                            className="pvc-input-label"
+                            type="text"
+                            placeholder={index === 0 ? 'Nombre del dato (ej. Tickets)' : 'Nombre del dato'}
+                            value={variable.label}
+                            onChange={(e) => updateCustomVariable(variable.id, 'label', e.target.value)}
+                          />
 
-                        <div style={{ marginBottom: '0.75rem', display: 'grid', gap: '0.35rem' }}>
-                          <span className="field-hint">Clave interna generada automáticamente</span>
-                          <div style={{ padding: '0.75rem 0.9rem', borderRadius: '12px', background: 'white', border: '1px dashed rgba(37, 99, 235, 0.25)', fontFamily: 'monospace', color: 'var(--text-soft)' }}>
-                            {variable.key}
+                          <div className="pvc-key-row">
+                            <Hash size={12} />
+                            <span className="pvc-key">{variable.key}</span>
                           </div>
-                        </div>
 
-                        <input
-                          className="field-input"
-                          type="text"
-                          placeholder="Ayuda opcional para quien captura"
-                          value={variable.helpText || ''}
-                          onChange={(e) => updateCustomVariable(variable.id, 'helpText', e.target.value)}
-                        />
+                          <input
+                            className="pvc-input-hint"
+                            type="text"
+                            placeholder="Instrucciones para el usuario..."
+                            value={variable.helpText || ''}
+                            onChange={(e) => updateCustomVariable(variable.id, 'helpText', e.target.value)}
+                          />
+                        </div>
                       </div>
                     ))}
                   </div>
+
+                  <style>{`
+                    .premium-variable-card {
+                      background: white;
+                      border: 2px solid #f1f5f9;
+                      border-radius: 16px;
+                      padding: 1.25rem;
+                      transition: all 0.2s;
+                    }
+                    .premium-variable-card:hover {
+                      border-color: var(--accent-color);
+                      box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.1);
+                    }
+                    .pvc-header {
+                      display: flex;
+                      justify-content: space-between;
+                      align-items: center;
+                      margin-bottom: 1rem;
+                    }
+                    .pvc-tag {
+                      font-size: 0.65rem;
+                      font-weight: 800;
+                      color: var(--accent-color);
+                      background: rgba(59, 130, 246, 0.1);
+                      padding: 2px 8px;
+                      border-radius: 6px;
+                      letter-spacing: 0.05em;
+                    }
+                    .pvc-delete {
+                      background: none;
+                      border: none;
+                      color: #94a3b8;
+                      cursor: pointer;
+                      padding: 4px;
+                      border-radius: 50%;
+                      transition: all 0.2s;
+                    }
+                    .pvc-delete:hover { background: #fef2f2; color: #ef4444; }
+                    .pvc-input-label {
+                      width: 100%;
+                      border: none;
+                      background: none;
+                      font-weight: 700;
+                      font-size: 1rem;
+                      color: #1e293b;
+                      margin-bottom: 0.5rem;
+                      outline: none;
+                      font-family: inherit;
+                    }
+                    .pvc-key-row {
+                      display: flex;
+                      align-items: center;
+                      gap: 4px;
+                      color: #64748b;
+                      margin-bottom: 0.75rem;
+                      font-family: monospace;
+                      font-size: 0.8rem;
+                    }
+                    .pvc-input-hint {
+                      width: 100%;
+                      border: 1px solid #f1f5f9;
+                      background: #f8fafc;
+                      border-radius: 8px;
+                      padding: 0.4rem 0.6rem;
+                      font-size: 0.8rem;
+                      color: #64748b;
+                      outline: none;
+                    }
+                    .pvc-input-hint:focus { border-color: #cbd5e1; background: white; }
+                  `}</style>
 
                   <button type="button" className="btn-secondary" onClick={addCustomVariable} style={{ marginBottom: '1rem' }}>
                     <Plus size={16} /> Agregar variable
                   </button>
 
                   <label className="field-label">Plantilla de cálculo</label>
-                  <div style={{ display: 'grid', gap: '0.75rem', marginBottom: '1rem' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.75rem', marginBottom: '1rem' }}>
                     {CUSTOM_TEMPLATE_OPTIONS.map((option) => (
                       <button
                         key={option.value}
@@ -695,33 +789,33 @@ export default function CreateKpiModal({ empresaId, onClose, onSuccess }: Create
                           setCustomTemplate(option.value);
                           syncCustomExpression(option.value, customVariables, formulaTipo);
                         }}
-                        style={{ textAlign: 'left' }}
+                        style={{ textAlign: 'left', padding: '0.75rem' }}
                       >
                         <div className="foc-body">
-                          <div className="foc-label">{option.label}</div>
-                          <div className="foc-example">{option.description}</div>
+                          <div className="foc-label" style={{ fontSize: '0.85rem' }}>{option.label}</div>
+                          <div className="foc-example" style={{ fontSize: '0.7rem' }}>{option.description}</div>
                         </div>
                         {customTemplate === option.value && (
-                          <div className="foc-check"><Check size={16} /></div>
+                          <div className="foc-check"><Check size={14} /></div>
                         )}
                       </button>
                     ))}
                   </div>
 
-                  <label className="field-label">Expresión matemática</label>
-                  <div style={{ background: '#ffffff', border: '1px solid rgba(59, 130, 246, 0.12)', borderRadius: '12px', padding: '0.9rem 1rem', marginBottom: '0.75rem' }}>
-                    <strong style={{ display: 'block', marginBottom: '0.35rem', color: 'var(--text-main)' }}>Vista previa del cálculo</strong>
-                    <span className="field-hint">
-                      El resultado se calculará con esta expresión: <span style={{ fontFamily: 'monospace', color: 'var(--text-main)' }}>{customExpression || 'Define una fórmula para continuar'}</span>
-                    </span>
+                  <label className="field-label" style={{ marginTop: '2rem' }}>Expresión matemática</label>
+                  <div style={{ background: '#ffffff', border: '1px solid rgba(59, 130, 246, 0.12)', borderRadius: '12px', padding: '0.9rem 1rem', marginBottom: '1rem' }}>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Vista previa del cálculo</div>
+                    <div style={{ fontFamily: 'monospace', fontSize: '1.1rem', color: 'var(--accent-color)', fontWeight: 700 }}>
+                      {customExpression || <span style={{ opacity: 0.3 }}>Define una fórmula para continuar...</span>}
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
+
+                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
                     {customVariables.map((variable) => (
                       <button
                         key={variable.id}
                         type="button"
-                        className="btn-secondary"
-                        style={{ padding: '0.4rem 0.7rem', fontFamily: 'monospace' }}
+                        className="btn-token-var"
                         onClick={() => appendExpressionToken(variable.key)}
                       >
                         {variable.key}
@@ -731,8 +825,7 @@ export default function CreateKpiModal({ empresaId, onClose, onSuccess }: Create
                       <button
                         key={token}
                         type="button"
-                        className="btn-secondary"
-                        style={{ padding: '0.4rem 0.7rem', fontFamily: 'monospace' }}
+                        className="btn-token-op"
                         onClick={() => appendExpressionToken(token)}
                       >
                         {token}
@@ -743,7 +836,7 @@ export default function CreateKpiModal({ empresaId, onClose, onSuccess }: Create
                   <textarea
                     className="field-input field-textarea"
                     rows={3}
-                    placeholder="Ej: (solicitudes_resueltas / solicitudes_recibidas) * 100"
+                    placeholder="Ej: (tickets_resueltos / tickets_recibidos) * 100"
                     value={customExpression}
                     onChange={(e) => {
                       if (customTemplate !== 'manual') {
@@ -751,18 +844,155 @@ export default function CreateKpiModal({ empresaId, onClose, onSuccess }: Create
                       }
                       setCustomExpression(e.target.value);
                     }}
-                    style={{ fontFamily: 'monospace' }}
+                    style={{ fontFamily: 'monospace', fontSize: '1rem', border: '2px solid #e2e8f0', borderRadius: '14px' }}
                   />
 
-                  <div className="field-hint" style={{ marginTop: '0.5rem' }}>
-                    Puedes usar las plantillas para empezar rápido o cambiar a fórmula libre. Operaciones permitidas: suma (+), resta (-), multiplicación (*), división (/), paréntesis y números.
+                  <div className="field-hint" style={{ marginTop: '0.5rem', marginBottom: '2rem' }}>
+                    Usa las plantillas o escribe libremente. Operaciones: +, -, *, /, ( ).
                   </div>
 
                   {!customFormulaValidation.valid && (
-                    <div className="semaforo-warning" style={{ marginTop: '0.75rem' }}>
-                      {customFormulaValidation.error}
+                    <div className="semaforo-warning" style={{ margin: '1rem 0' }}>
+                      <AlertCircle size={16} /> {customFormulaValidation.error}
                     </div>
                   )}
+
+                  <style>{`
+                    .btn-token-var {
+                      background: #eff6ff;
+                      border: 1px solid #bfdbfe;
+                      color: #2563eb;
+                      padding: 0.4rem 0.8rem;
+                      border-radius: 8px;
+                      font-family: monospace;
+                      font-weight: 700;
+                      cursor: pointer;
+                      transition: all 0.2s;
+                    }
+                    .btn-token-var:hover { background: #dbeafe; transform: translateY(-1px); }
+                    
+                    .btn-token-op {
+                      background: #f8fafc;
+                      border: 1px solid #e2e8f0;
+                      color: #64748b;
+                      padding: 0.4rem 0.8rem;
+                      border-radius: 8px;
+                      font-family: monospace;
+                      font-weight: 700;
+                      cursor: pointer;
+                      transition: all 0.2s;
+                    }
+                    .btn-token-op:hover { background: #f1f5f9; color: #1e293b; }
+                  `}</style>
+
+                  <label className="field-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '2rem' }}>
+                    <Calculator size={18} /> Probador de fórmula (Simulación)
+                  </label>
+                  <div className="simulation-box">
+                    <div className="simulation-grid">
+                      <div className="simulation-inputs">
+                        {customVariables.map((v, i) => (
+                          <div key={v.id} className="simulation-field">
+                            <label>{v.label || `Dato ${i + 1}`}</label>
+                            <input 
+                              type="number" 
+                              placeholder="0"
+                              value={simulationValues[v.id] || ''}
+                              onChange={(e) => setSimulationValues(prev => ({ ...prev, [v.id]: e.target.value }))}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                      <div className="simulation-display">
+                        <div className="simulation-label">Resultado simulado</div>
+                        <div className={`simulation-value ${simulationError ? 'error' : ''}`}>
+                          {simulationError ? '---' : (simulationResult !== null ? simulationResult.toLocaleString() : '0')}
+                        </div>
+                        <div className="simulation-hint">
+                          {simulationError || 'Cambia los valores de arriba para validar tu fórmula en tiempo real.'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <style>{`
+                    .simulation-box {
+                      background: #0f172a;
+                      color: white;
+                      border-radius: 20px;
+                      padding: 1.5rem;
+                      margin-top: 1rem;
+                      box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.2);
+                    }
+                    .simulation-grid {
+                      display: grid;
+                      grid-template-columns: 1fr 200px;
+                      gap: 2rem;
+                    }
+                    .simulation-inputs {
+                      display: grid;
+                      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+                      gap: 1rem;
+                    }
+                    .simulation-field label {
+                      display: block;
+                      font-size: 0.7rem;
+                      text-transform: uppercase;
+                      letter-spacing: 0.05em;
+                      color: #94a3b8;
+                      margin-bottom: 0.5rem;
+                      font-weight: 700;
+                    }
+                    .simulation-field input {
+                      width: 100%;
+                      background: rgba(255, 255, 255, 0.05);
+                      border: 1px solid rgba(255, 255, 255, 0.1);
+                      border-radius: 10px;
+                      padding: 0.6rem 0.8rem;
+                      color: white;
+                      font-family: 'Outfit', sans-serif;
+                      font-weight: 600;
+                      transition: all 0.2s;
+                    }
+                    .simulation-field input:focus {
+                      outline: none;
+                      background: rgba(255, 255, 255, 0.1);
+                      border-color: #3b82f6;
+                    }
+                    .simulation-display {
+                      border-left: 1px solid rgba(255, 255, 255, 0.1);
+                      padding-left: 1.5rem;
+                      display: flex;
+                      flex-direction: column;
+                      justify-content: center;
+                    }
+                    .simulation-label {
+                      font-size: 0.75rem;
+                      color: #94a3b8;
+                      font-weight: 700;
+                      text-transform: uppercase;
+                      margin-bottom: 0.5rem;
+                    }
+                    .simulation-value {
+                      font-size: 2.5rem;
+                      font-weight: 800;
+                      color: #3b82f6;
+                      line-height: 1;
+                      margin-bottom: 0.5rem;
+                    }
+                    .simulation-value.error {
+                      color: #ef4444;
+                    }
+                    .simulation-hint {
+                      font-size: 0.8rem;
+                      color: #64748b;
+                      line-height: 1.4;
+                    }
+                    @media (max-width: 640px) {
+                      .simulation-grid { grid-template-columns: 1fr; }
+                      .simulation-display { border-left: none; padding-left: 0; padding-top: 1rem; border-top: 1px solid rgba(255, 255, 255, 0.1); }
+                    }
+                  `}</style>
                 </div>
               )}
             </div>
