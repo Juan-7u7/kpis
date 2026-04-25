@@ -213,43 +213,49 @@ Objetivo cumplido:
 - Se corrigieron acentos y ortografía en toda la interfaz de usuario (modales, tours, mensajes).
 - Se revisó y saneó el archivo `README.md` con la codificación correcta.
 
+### Fase 13. Rediseño de Experiencia de Usuario (UX/UI)
+
+Se transformó la interacción administrativa en una experiencia fluida y profesional:
+- Creación del **Company Hub**: Una vista centralizada y visual para administrar múltiples empresas.
+- **Panel Administrativo Premium**: Rediseño completo con tarjetas de resumen, iconos dinámicos y tablas modernas.
+- **Navegación Inteligente**: Botones de retorno rápido al Hub y transiciones suaves entre contextos de empresa.
+- **Estética Consistente**: Aplicación de un sistema de diseño "Premium" (glassmorphism, tipografía moderna, animaciones) en toda la sección administrativa.
+
 ## Fases faltantes
 
-Estas son las siguientes fases recomendadas para otro agente. Están ordenadas por prioridad práctica.
+Estas son las siguientes fases recomendadas. Están ordenadas por prioridad práctica.
 
+### Fase 14. Seguridad y aislamiento estricto
 
 Objetivo:
 aislar datos por empresa sin meter un sistema complejo de roles.
 
 Pendiente:
-
-- revisar políticas RLS en Supabase
-- definir si el admin único entra con usuario fijo o por autenticación real
-- evitar consultas cruzadas entre empresas
+- revisar políticas RLS en Supabase.
+- definir si el admin único entra con usuario fijo o por autenticación real.
+- evitar consultas cruzadas entre empresas.
 - validar en backend que:
-  - trabajador y area pertenezcan a la misma empresa
-  - trabajador y KPI pertenezcan a la misma empresa
-  - area y KPI pertenezcan a la misma empresa cuando aplique
+  - trabajador y área pertenezcan a la misma empresa.
+  - trabajador y KPI pertenezcan a la misma empresa.
+  - área y KPI pertenezcan a la misma empresa cuando aplique.
 
 Nota:
+- el proyecto intencionalmente no implementa varios roles por ahora.
+- eso no elimina la necesidad de aislamiento por empresa.
 
-- el proyecto intencionalmente no implementa varios roles por ahora
-- eso no elimina la necesidad de aislamiento por empresa
-
-### Fase 13. Prueba funcional con empresas reales
+### Fase 15. Prueba funcional con empresas reales
 
 Objetivo:
 validar que el modelo soporte escenarios tipo TODITO / CNCI.
 
 Pendiente:
-
-- crear al menos 2 empresas reales de prueba
-- crear areas distintas por empresa
-- crear trabajadores distintos por empresa
-- crear KPIs distintos por empresa
-- asignar trabajadores a areas y KPIs
-- verificar que no se mezclen datos entre empresas
-- probar fórmulas personalizadas reales
+- crear al menos 2 empresas reales de prueba.
+- crear áreas distintas por empresa.
+- crear trabajadores distintos por empresa.
+- crear KPIs distintos por empresa.
+- asignar trabajadores a áreas y KPIs.
+- verificar que no se mezclen datos entre empresas.
+- probar fórmulas personalizadas reales.
 
 ## Riesgos conocidos
 
