@@ -53,6 +53,16 @@ Hoy ya existe soporte base para:
 - `src/lib/customFormula.ts`
   Validación de fórmula personalizada.
 
+## Arquitectura de Componentes
+
+Para mantener el proyecto escalable y fácil de entender, se utiliza una estructura modular:
+
+- **`src/types/dashboard.ts`**: El "contrato" de datos. Contiene todas las interfaces compartidas (KPI, Empresa, Profile).
+- **`src/components/KpiCard.tsx`**: Encapsula la visualización de indicadores. Maneja los diferentes tipos de gráficas (Dona, Barra, Número) y las acciones rápidas.
+- **`src/components/DashboardFilters.tsx`**: Centraliza la lógica de búsqueda, filtrado por área y selección de periodos.
+- **`src/components/CompanyHub.tsx`**: Administrador visual de las empresas del sistema.
+- **`src/App.tsx`**: Orquestador principal que maneja el estado global y la navegación entre el Hub y el Dashboard.
+
 ## Decisiones funcionales ya tomadas
 
 Estas decisiones ya fueron acordadas y el siguiente trabajo debe respetarlas:

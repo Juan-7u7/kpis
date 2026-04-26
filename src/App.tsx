@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Palette } from 'lucide-react';
-import { BarChart3, Calendar, Filter, Search, Edit3, HelpCircle, Inbox, PlusCircle, Trash2, LogOut, LayoutGrid, Users, Briefcase, Shield, Lock, ArrowRight } from 'lucide-react';
+import { BarChart3, Edit3, HelpCircle, Inbox, PlusCircle, Trash2, LogOut, LayoutGrid, Users, Briefcase, Shield, Lock, ArrowRight } from 'lucide-react';
 import { Toaster, toast } from 'react-hot-toast';
 import { driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
@@ -13,51 +12,10 @@ import CreateAreaModal from './components/CreateAreaModal';
 import CreateWorkerModal from './components/CreateWorkerModal';
 import WorkerAssignmentsModal from './components/WorkerAssignmentsModal';
 import CompanyHub from './components/CompanyHub';
+import KpiCard from './components/KpiCard';
+import DashboardFilters from './components/DashboardFilters';
 import { VisualConfigModal } from './components/VisualConfigModal';
-import type { VisualConfig } from '../api/types/kpi';
-
-interface Empresa {
-  id: string;
-  nombre: string;
-  slug: string;
-  descripcion?: string | null;
-}
-
-interface KPI {
-  id: string;
-  kpi_id: string;
-  resultado_id: string | null;
-  kpi_nombre: string;
-  area: string;
-  valor: number | null;
-  semaforo: string;
-  unidad: string;
-  formula_tipo: string;
-  tipo_resultado: string;
-  es_borrable?: boolean;
-  kpi_config?: {
-    config_json?: {
-      visual?: VisualConfig;
-    } | null;
-  } | null;
-}
-
-interface Profile {
-  id: string;
-  nombre: string;
-  email: string;
-  activo: boolean;
-}
-
-interface Area {
-  id: string;
-  nombre: string;
-  descripcion?: string | null;
-}
-
-interface KpiGroup {
-  [area: string]: KPI[];
-}
+import type { Empresa, KPI, Profile, Area, KpiGroup } from './types/dashboard';
 
 const getCurrentPeriod = () => {
   const now = new Date();
@@ -337,15 +295,6 @@ function App() {
     }
   };
 
-  const getSemaforoColor = (semaforo: string) => {
-    switch (semaforo?.toLowerCase()) {
-      case 'verde': return 'var(--color-verde)';
-      case 'amarillo': return 'var(--color-amarillo)';
-      case 'rojo': return 'var(--color-rojo)';
-      default: return 'var(--color-gris)';
-    }
-  };
-
   const getSemaforoRgb = (semaforo: string) => {
     switch (semaforo?.toLowerCase()) {
       case 'verde': return '16, 185, 129';
@@ -508,83 +457,26 @@ function App() {
           </div>
         </div>
         
-        <div className="header-filters" id="tour-filters">
-          <div className="filter-group">
-            <span className="filter-label"><BarChart3 size={14} /> EMPRESA</span>
-            <select
-              value={selectedEmpresaId}
-              onChange={(e) => {
-                setProfiles([]);
-                setAreas([]);
-                setSelectedEmpresaId(e.target.value);
-              }}
-            >
-              <option value="">Selecciona una empresa</option>
-              {empresas.map((empresa) => (
-                <option key={empresa.id} value={empresa.id}>
-                  {empresa.nombre}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="filter-group global-search">
-             <span className="filter-label"><Search size={14} /> BÚSQUEDA</span>
-             <div style={{ position: 'relative' }}>
-               <Search size={16} className="search-icon" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-gris-claro)' }} />
-               <input 
-                 type="text" 
-                 placeholder="Buscar KPI..." 
-                 value={searchQuery}
-                 onChange={(e) => setSearchQuery(e.target.value)}
-                 style={{ paddingLeft: '2.2rem' }}
-               />
-             </div>
-          </div>
-          
-          <div className="filter-group">
-            <span className="filter-label"><Filter size={14} /> ÁREA</span>
-            <select value={selectedArea} onChange={(e) => setSelectedArea(e.target.value)}>
-              <option value="Todas">Todas las áreas</option>
-              {areasList.map(a => <option key={a as string} value={a as string}>{a}</option>)}
-            </select>
-          </div>
-
-          <div className="filter-group">
-            <span className="filter-label"><Calendar size={14} /> PERIODO</span>
-            <div className="period-selectors">
-              <select
-                value={selectedYear}
-                onChange={(e) => {
-                  setIsAutoPeriod(false);
-                  setSelectedYear(e.target.value);
-                }}
-              >
-                {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
-              </select>
-              <select
-                value={selectedMonth}
-                onChange={(e) => {
-                  setIsAutoPeriod(false);
-                  setSelectedMonth(e.target.value);
-                }}
-              >
-                <option value="1">Enero</option>
-                <option value="2">Febrero</option>
-                <option value="3">Marzo</option>
-                <option value="4">Abril</option>
-                <option value="5">Mayo</option>
-                <option value="6">Junio</option>
-                <option value="7">Julio</option>
-                <option value="8">Agosto</option>
-                <option value="9">Septiembre</option>
-                <option value="10">Octubre</option>
-                <option value="11">Noviembre</option>
-                <option value="12">Diciembre</option>
-              </select>
-            </div>
-          </div>
-        </div>
+        <DashboardFilters 
+          empresas={empresas}
+          selectedEmpresaId={selectedEmpresaId}
+          onEmpresaChange={(id) => {
+            setProfiles([]);
+            setAreas([]);
+            setSelectedEmpresaId(id);
+          }}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          selectedArea={selectedArea}
+          onAreaChange={setSelectedArea}
+          areasList={areasList}
+          selectedYear={selectedYear}
+          onYearChange={setSelectedYear}
+          selectedMonth={selectedMonth}
+          onMonthChange={setSelectedMonth}
+          availableYears={availableYears}
+          setIsAutoPeriod={setIsAutoPeriod}
+        />
       </header>
 
       {isAdminView && !isAdminAuthenticated ? (
@@ -815,129 +707,16 @@ function App() {
             ) : (
               <div className="kpi-grid">
                 {groupedKpis[area].map((kpi: KPI) => (
-                  <div 
-                    key={kpi.resultado_id || kpi.kpi_id} 
-                    className="kpi-card hover-enabled"
-                    style={{ 
-                      '--card-color': getSemaforoColor(kpi.semaforo), 
-                      '--card-rgb': getSemaforoRgb(kpi.semaforo) 
-                    } as React.CSSProperties}
-                    onClick={() => setKpiForHistory(kpi)}
-                  >
-                    <div className="kpi-card-header-v2" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.5rem 1.5rem 0.5rem' }}>
-                      <span className="kpi-formula-type" style={{ margin: 0 }}>{kpi.formula_tipo.replace(/[_]/g, ' ').toUpperCase()}</span>
-                      
-                      <div className="kpi-actions-wrapper" style={{ display: 'flex', alignItems: 'center', gap: '8px' }} onClick={e => e.stopPropagation()}>
-                        <button className="quick-action-btn" onClick={() => setVisualConfigKpi(kpi)} title="Diseño">
-                          <Palette size={14} />
-                        </button>
-                        <button className="quick-action-btn" onClick={() => setKpiForHistory(kpi)} title="Info">
-                          <HelpCircle size={14} />
-                        </button>
-                        <button 
-                          className={kpi.valor === null ? "kpi-edit-btn primary-pulse" : "kpi-edit-btn"} 
-                          style={{ margin: 0, padding: '0.4rem 0.8rem', height: '32px' }} 
-                          onClick={() => setCaptureKpi(kpi)}
-                        >
-                          {kpi.valor === null ? <PlusCircle size={14} /> : <Edit3 size={14} />}
-                          <span style={{ marginLeft: '6px', fontSize: '0.75rem' }}>{kpi.valor === null ? 'Capturar' : 'Actualizar'}</span>
-                        </button>
-                        <button 
-                          className="kpi-edit-btn btn-delete" 
-                          style={{ padding: '0.4rem', margin: 0, height: '32px', width: '32px', display: 'flex', justifyContent: 'center', alignItems: 'center', color: kpi.es_borrable ? '#ef4444' : '#94a3b8' }} 
-                          onClick={() => handleDeleteKpiRequest(kpi)}
-                          title={kpi.es_borrable ? "Eliminar KPI" : "KPI de Sistema"}
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    </div>
-
-                    <h3 className="kpi-name" style={{ minHeight: '3rem', marginBottom: '1rem', padding: '0 1.5rem' }}>{kpi.kpi_nombre}</h3>
-
-                    <div className="kpi-card-footer" style={{ marginTop: 'auto', padding: '0.5rem 1.5rem 1.5rem', width: '100%' }}>
-                      {(() => {
-                        const visual = kpi.kpi_config?.config_json?.visual || {};
-                        const chartType = visual.chart_type || ((kpi.tipo_resultado === 'porcentaje' || kpi.tipo_resultado === 'binario') ? 'donut' : 'bar');
-                        const customColor = visual.primary_color;
-                        const cardStyle = customColor ? { '--progress-color': customColor } as React.CSSProperties : {};
-
-                        if (chartType === 'donut') {
-                          return (
-                            <div className="kpi-donut-container">
-                              <div className="radial-progress-wrapper">
-                                <div 
-                                  className="radial-progress" 
-                                  style={{ 
-                                    ...cardStyle,
-                                    '--progress': kpi.valor === null ? 0 : (kpi.tipo_resultado === 'binario' ? (kpi.valor > 0 ? 100 : 0) : kpi.valor) 
-                                  } as React.CSSProperties}
-                                >
-                                  <div className="radial-progress-inner">
-                                    {kpi.valor !== null ? (kpi.tipo_resultado === 'binario' ? (kpi.valor > 0 ? '100%' : '0%') : `${kpi.valor}%`) : '--'}
-                                  </div>
-                                </div>
-                                <div>
-                                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600, marginBottom: '4px' }}>
-                                    {kpi.tipo_resultado === 'binario' ? 'CUMPLIMIENTO' : 'PROGRESO'}
-                                  </div>
-                                  <div className="kpi-status">
-                                    <span className="status-dot"></span>
-                                    {kpi.semaforo === 'gris' ? 'Pendiente' : kpi.semaforo.charAt(0).toUpperCase() + kpi.semaforo.slice(1)}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        }
-
-                        if (chartType === 'number') {
-                          return (
-                            <div className="kpi-big-number-container">
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div className="kpi-result">
-                                  <span className="kpi-big-number-value" style={{ '--card-rgb': getSemaforoRgb(kpi.semaforo) } as any}>
-                                    {kpi.valor !== null ? kpi.valor : '--'}
-                                  </span>
-                                  {kpi.valor !== null && <span className="kpi-unit" style={{ marginLeft: '10px', fontSize: '1.2rem', opacity: 0.5, fontWeight: 700 }}>{kpi.unidad}</span>}
-                                </div>
-                                <div className="kpi-status">
-                                  <span className="status-dot"></span>
-                                  {kpi.semaforo === 'gris' ? 'Pendiente' : kpi.semaforo.charAt(0).toUpperCase() + kpi.semaforo.slice(1)}
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        }
-
-                        // Default to Bar (Progress Bar)
-                        return (
-                          <div style={{ width: '100%' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '8px' }}>
-                              <div className="kpi-result">
-                                <span className="kpi-value">{kpi.valor !== null ? kpi.valor : '--'}</span>
-                                {kpi.valor !== null && <span className="kpi-unit" style={{ marginLeft: '4px' }}>{kpi.unidad}</span>}
-                              </div>
-                              <div className="kpi-status">
-                                <span className="status-dot"></span>
-                                {kpi.semaforo === 'gris' ? 'Pendiente' : kpi.semaforo.charAt(0).toUpperCase() + kpi.semaforo.slice(1)}
-                              </div>
-                            </div>
-                            <div className="linear-progress-container" title="Progreso relativo">
-                              <div 
-                                className="linear-progress-bar" 
-                                style={{ 
-                                  '--bar-color': customColor || undefined,
-                                  width: kpi.valor === null ? '0%' : (kpi.semaforo === 'verde' ? '100%' : (kpi.semaforo === 'amarillo' ? '65%' : '35%')),
-                                  opacity: kpi.valor === null ? 0.3 : 1
-                                } as React.CSSProperties}
-                              ></div>
-                            </div>
-                          </div>
-                        );
-                      })()}
-                    </div>
-                  </div>
+                  <KpiCard
+                    key={kpi.resultado_id || kpi.kpi_id}
+                    kpi={kpi}
+                    isAdmin={isAdminAuthenticated}
+                    onOpenDetail={setKpiForHistory}
+                    onCapture={setCaptureKpi}
+                    onOpenVisualConfig={setVisualConfigKpi}
+                    onDelete={handleDeleteKpiRequest}
+                    getSemaforoRgb={getSemaforoRgb}
+                  />
                 ))}
               </div>
             )}

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Palette, BarChart3, PieChart, Hash, Sparkles } from 'lucide-react';
+import { X, Palette, BarChart3, PieChart, Hash } from 'lucide-react';
 import type { VisualConfig } from '../../api/types/kpi';
 
 interface Props {
