@@ -40,6 +40,8 @@ Hoy ya existe soporte base para:
   Alta de trabajadores con `nombre`, `email`, `empresa`.
 - `src/components/WorkerAssignmentsModal.tsx`
   Asignación de áreas y KPIs a trabajadores.
+- `src/components/VisualConfigModal.tsx`
+  Personalización de tipos de gráfica y colores de KPIs.
 - `api/routes/kpiRoutes.ts`
   Endpoints de empresas, áreas, KPIs y consultas principales.
 - `api/routes/profileRoutes.ts`
@@ -72,6 +74,7 @@ Estas decisiones ya fueron acordadas y el siguiente trabajo debe respetarlas:
   - `email`
   - `empresa`
 - el motor de KPI personalizado se sigue guardando en `kpi_config.config_json`
+- la configuración visual (tipo de gráfica, color) se guarda en `kpi_config.config_json.visual`
 - el email en `profiles` sigue siendo unico global
 - la unicidad de KPIs quedó pensada por `empresa + área + nombre`, con manejo especial cuando `area_id` es `null`
 
@@ -220,6 +223,14 @@ Se transformó la interacción administrativa en una experiencia fluida y profes
 - **Panel Administrativo Premium**: Rediseño completo con tarjetas de resumen, iconos dinámicos y tablas modernas.
 - **Navegación Inteligente**: Botones de retorno rápido al Hub y transiciones suaves entre contextos de empresa.
 - **Estética Consistente**: Aplicación de un sistema de diseño "Premium" (glassmorphism, tipografía moderna, animaciones) en toda la sección administrativa.
+
+### Fase 14. Personalización Visual de KPIs
+
+Se implementó un sistema de diseño dinámico para los indicadores:
+- **VisualConfigModal**: Nuevo componente para elegir entre tipos de visualización (Dona, Barra de Progreso, Número Grande, Sparkline) y paletas de colores premium.
+- **Persistencia en tiempo real**: Los cambios se guardan en la base de datos y se reflejan instantáneamente en el dashboard de todos los usuarios.
+- **Motor de Renderizado Dinámico**: Las tarjetas de KPI ahora adaptan su estructura interna según la configuración visual elegida, manteniendo una estética cohesiva.
+- **Optimización de API**: Se aplanó la estructura de respuesta de configuraciones para mejorar el rendimiento del frontend.
 
 ## Fases faltantes
 

@@ -10,7 +10,8 @@ import type {
   KpiHistoryRecord,
   KPIResultRecord,
   UpdateAreaBody,
-  UpdateEmpresaBody
+  UpdateEmpresaBody,
+  VisualConfig
 } from '../types/kpi.js';
 
 const slugify = (value: string) =>
@@ -143,7 +144,8 @@ export const getKpisByPeriod = async (empresaId: string, anio: string, mes: stri
         formula_tipo,
         tipo_resultado,
         orden_visual,
-        areas(id, nombre)
+        areas(id, nombre),
+        kpi_config(config_json)
       `
     )
     .eq('empresa_id', empresaId)
@@ -194,7 +196,8 @@ export const getKpisByPeriod = async (empresaId: string, anio: string, mes: stri
       unidad: resultado?.unidad_resultado ?? (kpi.tipo_resultado === 'porcentaje' ? '%' : ''),
       semaforo: resultado?.semaforo ?? 'gris',
       orden_visual: kpi.orden_visual,
-      es_borrable: (kpi.orden_visual || 0) > 7
+      es_borrable: (kpi.orden_visual || 0) > 7,
+      kpi_config: Array.isArray(kpi.kpi_config) ? kpi.kpi_config[0] : kpi.kpi_config
     };
   });
 
@@ -534,4 +537,33 @@ export const deleteKpiById = async (id: string) => {
 
   const { error: deleteErr } = await supabase.from('kpis').delete().eq('id', id);
   if (deleteErr) throw deleteErr;
+};
+
+export const updateKpiVisualConfig = async (kpiId: string, visual: VisualConfig) => {
+  const { data: current, error: getError } = await supabase
+    .from('kpi_config')
+    .select('config_json, semaforo_verde_min, semaforo_amarillo_min, semaforo_rojo_max')
+    .eq('kpi_id', kpiId)
+    .maybeSingle();
+
+  if (getError) throw getError;
+
+  const newConfig = {
+    ...(current?.config_json || {}),
+    visual: visual
+  };
+
+  const { error: updError } = await supabase
+    .from('kpi_config')
+    .upsert({ 
+      kpi_id: kpiId,
+      config_json: newConfig,
+      // Si no existía, ponemos valores por defecto para evitar nulos en campos obligatorios
+      semaforo_verde_min: current?.semaforo_verde_min ?? 90,
+      semaforo_amarillo_min: current?.semaforo_amarillo_min ?? 80,
+      semaforo_rojo_max: current?.semaforo_rojo_max ?? 79.99
+    }, { onConflict: 'kpi_id' });
+
+  if (updError) throw updError;
+  return { success: true };
 };

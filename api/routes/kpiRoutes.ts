@@ -14,7 +14,8 @@ import {
   getKpisByPeriod,
   getNextKpiOrder,
   updateArea,
-  updateEmpresa
+  updateEmpresa,
+  updateKpiVisualConfig
 } from '../services/kpiService.js';
 import type { CreateKpiBody } from '../types/kpi.js';
 
@@ -228,6 +229,20 @@ router.delete(
         return res.status(403).json({ success: false, error: error.message });
       }
       throw error;
+    }
+  })
+);
+
+router.put(
+  '/kpis/:id/visual',
+  asyncHandler(async (req, res) => {
+    try {
+      const kpiId = getSingleQueryValue(req.params.id);
+      await updateKpiVisualConfig(kpiId || '', req.body);
+      res.json({ success: true, message: 'Configuración visual actualizada correctamente.' });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Error al actualizar configuración.';
+      res.status(400).json({ success: false, error: message });
     }
   })
 );

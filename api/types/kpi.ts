@@ -8,6 +8,7 @@ export interface KPIBase {
   tipo_resultado: string;
   orden_visual: number;
   areas: { id: string; nombre: string }[] | null;
+  kpi_config: { config_json: any }[] | null;
 }
 
 export interface KPIResultRecord {
@@ -78,6 +79,12 @@ export interface CaptureRequestBody {
     | Record<string, number>;
 }
 
+export interface VisualConfig {
+  chart_type?: 'donut' | 'bar' | 'number' | 'sparkline';
+  primary_color?: string;
+  show_delta?: boolean;
+}
+
 export interface KpiCalculationConfig {
   formula_tipo: string;
   semaforo_verde_min: number | null;
@@ -86,6 +93,7 @@ export interface KpiCalculationConfig {
   config_json?: { 
     custom_formula?: CustomFormulaConfig;
     sentido?: 'higher_is_better' | 'lower_is_better' | 'range_is_better';
+    visual?: VisualConfig;
     objetivo?: string;
     definicion?: string;
     medicion?: string;
