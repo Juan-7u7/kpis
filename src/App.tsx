@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { BarChart3, Calendar, Filter, Search, Edit3, HelpCircle, Inbox, PlusCircle, Trash2, LogOut, LayoutGrid, Users, Briefcase } from 'lucide-react';
+import { BarChart3, Calendar, Filter, Search, Edit3, HelpCircle, Inbox, PlusCircle, Trash2, LogOut, LayoutGrid, Users, Briefcase, Shield, Lock, ArrowRight } from 'lucide-react';
 import { Toaster, toast } from 'react-hot-toast';
 import { driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
@@ -579,32 +579,39 @@ function App() {
       </header>
 
       {isAdminView && !isAdminAuthenticated ? (
-        <main className="dashboard-main" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
-          <div className="capture-modal__content" style={{ maxWidth: '400px', width: '100%', position: 'static', transform: 'none' }}>
-            <div className="capture-modal__header">
-              <h2 className="capture-modal__title">Acceso Administrativo</h2>
+        <div className="admin-login-container">
+          <div className="admin-login-card">
+            <div className="admin-login-icon-wrapper">
+              <Shield size={40} />
             </div>
-            <form onSubmit={handleAdminLogin} className="capture-modal__body" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-                Ingresa la contraseña para gestionar empresas, áreas y trabajadores.
-              </p>
-              <div className="input-group">
-                <label className="input-label">Contraseña</label>
-                <input 
-                  type="password" 
-                  className="capture-input" 
-                  placeholder="••••••••"
-                  value={adminPassword}
-                  onChange={(e) => setAdminPassword(e.target.value)}
-                  autoFocus
-                />
+            <h2>Acceso Admin</h2>
+            <p>Panel de control maestro para la gestión de indicadores y empresas.</p>
+            
+            <form onSubmit={handleAdminLogin} className="admin-login-form">
+              <div className="admin-login-input-group">
+                <label>Contraseña de Seguridad</label>
+                <div className="admin-login-input-wrapper">
+                  <Lock size={20} className="admin-login-input-icon" />
+                  <input 
+                    type="password" 
+                    placeholder="••••••••"
+                    value={adminPassword}
+                    onChange={(e) => setAdminPassword(e.target.value)}
+                    autoFocus
+                  />
+                </div>
               </div>
-              <button type="submit" className="btn-primary" style={{ width: '100%' }}>
-                Entrar al Panel
+              
+              <button type="submit" className="admin-login-button">
+                Desbloquear Panel <ArrowRight size={20} />
               </button>
             </form>
+            
+            <div className="admin-login-footer">
+              Sistema Protegido &copy; {new Date().getFullYear()}
+            </div>
           </div>
-        </main>
+        </div>
       ) : isAdminView && isAdminAuthenticated && !selectedEmpresaId ? (
         <main className="dashboard-main">
           <CompanyHub 
