@@ -1,0 +1,156 @@
+table_name,column_name,data_type
+areas,id,uuid
+areas,nombre,text
+areas,descripcion,text
+areas,activo,boolean
+areas,created_at,timestamp with time zone
+areas,updated_at,timestamp with time zone
+areas,empresa_id,uuid
+captura_binaria_documental,id,uuid
+captura_binaria_documental,captura_id,uuid
+captura_binaria_documental,campo,text
+captura_binaria_documental,valor,boolean
+captura_binaria_documental,created_at,timestamp with time zone
+captura_conteo,id,uuid
+captura_conteo,captura_id,uuid
+captura_conteo,programados,integer
+captura_conteo,cumplidos,integer
+captura_conteo,created_at,timestamp with time zone
+captura_conteo,updated_at,timestamp with time zone
+captura_conteo_operativo,id,uuid
+captura_conteo_operativo,captura_id,uuid
+captura_conteo_operativo,total_operaciones,integer
+captura_conteo_operativo,operaciones_correctas,integer
+captura_conteo_operativo,created_at,timestamp with time zone
+captura_conteo_operativo,updated_at,timestamp with time zone
+captura_entregas,id,uuid
+captura_entregas,captura_id,uuid
+captura_entregas,fecha_solicitud,date
+captura_entregas,fecha_entrega,date
+captura_entregas,dias_entrega,integer
+captura_entregas,cumplio_tiempo,boolean
+captura_entregas,comentario,text
+captura_entregas,created_at,timestamp with time zone
+captura_entregas,updated_at,timestamp with time zone
+captura_formula_personalizada,id,uuid
+captura_formula_personalizada,captura_id,uuid
+captura_formula_personalizada,valores,jsonb
+captura_formula_personalizada,created_at,timestamp with time zone
+captura_formula_personalizada,updated_at,timestamp with time zone
+empresas,id,uuid
+empresas,nombre,text
+empresas,slug,text
+empresas,descripcion,text
+empresas,activo,boolean
+empresas,created_at,timestamp with time zone
+empresas,updated_at,timestamp with time zone
+kpi_capturas,id,uuid
+kpi_capturas,kpi_id,uuid
+kpi_capturas,periodo_id,uuid
+kpi_capturas,capturado_por,uuid
+kpi_capturas,estado,text
+kpi_capturas,comentario,text
+kpi_capturas,created_at,timestamp with time zone
+kpi_capturas,updated_at,timestamp with time zone
+kpi_config,id,uuid
+kpi_config,kpi_id,uuid
+kpi_config,meta_valor,numeric
+kpi_config,meta_operador,text
+kpi_config,limite_dias,integer
+kpi_config,semaforo_verde_min,numeric
+kpi_config,semaforo_amarillo_min,numeric
+kpi_config,semaforo_rojo_max,numeric
+kpi_config,permite_multiple_evento_mes,boolean
+kpi_config,requiere_justificacion,boolean
+kpi_config,config_json,jsonb
+kpi_config,created_at,timestamp with time zone
+kpi_config,updated_at,timestamp with time zone
+kpi_evidencias,id,uuid
+kpi_evidencias,captura_id,uuid
+kpi_evidencias,nombre_archivo,text
+kpi_evidencias,storage_path,text
+kpi_evidencias,tipo_archivo,text
+kpi_evidencias,subido_por,uuid
+kpi_evidencias,created_at,timestamp with time zone
+kpi_justificaciones,id,uuid
+kpi_justificaciones,kpi_resultado_id,uuid
+kpi_justificaciones,texto,text
+kpi_justificaciones,created_by,uuid
+kpi_justificaciones,created_at,timestamp with time zone
+kpi_resultados,id,uuid
+kpi_resultados,kpi_id,uuid
+kpi_resultados,periodo_id,uuid
+kpi_resultados,captura_id,uuid
+kpi_resultados,valor_resultado,numeric
+kpi_resultados,valor_auxiliar,numeric
+kpi_resultados,unidad_resultado,text
+kpi_resultados,semaforo,text
+kpi_resultados,detalle_resultado,jsonb
+kpi_resultados,calculado_en,timestamp with time zone
+kpi_resultados,created_at,timestamp with time zone
+kpi_resultados,updated_at,timestamp with time zone
+kpis,id,uuid
+kpis,area_id,uuid
+kpis,nombre,text
+kpis,descripcion,text
+kpis,meta_descripcion,text
+kpis,frecuencia,text
+kpis,tipo_captura,text
+kpis,tipo_resultado,text
+kpis,formula_tipo,text
+kpis,orden_visual,integer
+kpis,activo,boolean
+kpis,created_at,timestamp with time zone
+kpis,updated_at,timestamp with time zone
+kpis,empresa_id,uuid
+periodos,id,uuid
+periodos,anio,integer
+periodos,mes,integer
+periodos,nombre,text
+periodos,fecha_inicio,date
+periodos,fecha_fin,date
+periodos,cerrado,boolean
+periodos,created_at,timestamp with time zone
+profile_areas,id,uuid
+profile_areas,profile_id,uuid
+profile_areas,area_id,uuid
+profile_areas,created_at,timestamp with time zone
+profile_kpis,id,uuid
+profile_kpis,profile_id,uuid
+profile_kpis,kpi_id,uuid
+profile_kpis,created_at,timestamp with time zone
+profile_roles,id,uuid
+profile_roles,profile_id,uuid
+profile_roles,role_id,uuid
+profile_roles,created_at,timestamp with time zone
+profiles,id,uuid
+profiles,nombre,text
+profiles,email,text
+profiles,activo,boolean
+profiles,created_at,timestamp with time zone
+profiles,updated_at,timestamp with time zone
+profiles,empresa_id,uuid
+roles,id,uuid
+roles,nombre,text
+roles,descripcion,text
+roles,created_at,timestamp with time zone
+v_kpis_detalle,kpi_id,uuid
+v_kpis_detalle,empresa_id,uuid
+v_kpis_detalle,area_nombre,text
+v_kpis_detalle,kpi_nombre,text
+v_kpis_detalle,meta_descripcion,text
+v_kpis_detalle,frecuencia,text
+v_kpis_detalle,tipo_captura,text
+v_kpis_detalle,tipo_resultado,text
+v_kpis_detalle,formula_tipo,text
+v_kpis_detalle,orden_visual,integer
+v_kpis_detalle,activo,boolean
+v_kpis_detalle,meta_valor,numeric
+v_kpis_detalle,meta_operador,text
+v_kpis_detalle,limite_dias,integer
+v_kpis_detalle,semaforo_verde_min,numeric
+v_kpis_detalle,semaforo_amarillo_min,numeric
+v_kpis_detalle,semaforo_rojo_max,numeric
+v_kpis_detalle,permite_multiple_evento_mes,boolean
+v_kpis_detalle,requiere_justificacion,boolean
+v_kpis_detalle,config_json,jsonb
