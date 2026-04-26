@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, ChevronRight, ChevronLeft, Check, BarChart3, FileText, Hash, Clock, ToggleLeft, Sigma, Plus, Trash2, BookOpen, Lightbulb, Calculator, AlertCircle } from 'lucide-react';
+import { X, ChevronRight, ChevronLeft, ChevronDown, Check, BarChart3, FileText, Hash, Clock, ToggleLeft, Sigma, PlusCircle, Trash2, BookOpen, Calculator, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { normalizeFormulaKey, validateCustomFormula, evaluateCustomFormula, type CustomFormulaVariable } from '../lib/customFormula';
 
