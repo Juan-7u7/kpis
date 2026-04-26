@@ -8,20 +8,34 @@ const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY!;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function clearTestData() {
-  console.log('🧹 Limpiando datos de prueba (resultados de captura)...');
+  console.log('🧹 Iniciando limpieza profunda de datos de prueba...');
 
-  // Borrar todos los resultados de los KPIs
-  const { error, count } = await supabase
-    .from('kpi_resultados')
-    .delete()
-    .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
+  const tablesToClear = [
+    'kpi_resultados',
+    'kpi_capturas',
+    'kpi_justificaciones',
+    'kpi_evidencias',
+    'captura_binaria_documental',
+    'captura_conteo',
+    'captura_conteo_operativo',
+    'captura_entregas',
+    'captura_formula_personalizada'
+  ];
 
-  if (error) {
-    console.error('❌ Error al limpiar resultados:', error.message);
-  } else {
-    console.log('✅ Todos los resultados de captura han sido eliminados.');
-    console.log('✨ El sistema está listo para recibir datos reales.');
+  for (const table of tablesToClear) {
+    const { error } = await supabase
+      .from(table)
+      .delete()
+      .neq('id', '00000000-0000-0000-0000-000000000000'); // Borra todo
+
+    if (error) {
+      console.warn(`⚠️ Nota en tabla ${table}:`, error.message);
+    } else {
+      console.log(`✅ Tabla ${table} limpiada.`);
+    }
   }
+
+  console.log('\n✨ El sistema ha sido reseteado. Los KPIs y Áreas permanecen intactos.');
 }
 
 clearTestData().catch(err => {
