@@ -187,6 +187,7 @@ export default function CreateKpiModal({ empresaId, onClose, onSuccess }: Create
   const [simulationValues, setSimulationValues] = useState<Record<string, string>>({});
   const [simulationResult, setSimulationResult] = useState<number | null>(null);
   const [simulationError, setSimulationError] = useState<string | null>(null);
+  const [showTutorial, setShowTutorial] = useState(false);
 
   useEffect(() => {
     if (!empresaId) return;
@@ -550,447 +551,388 @@ export default function CreateKpiModal({ empresaId, onClose, onSuccess }: Create
               )}
 
               {formulaTipo === 'formula_personalizada' && (
-                <div className="formula-extra-config">
-                  <div className="custom-formula-tutorial">
-                    <div className="custom-formula-tutorial__header">
-                      <div className="custom-formula-tutorial__icon">
-                        <BookOpen size={20} />
+                <div className="formula-extra-config" style={{ border: 'none', background: 'transparent', padding: 0 }}>
+                  
+                  {/* Tutorial Collapsible */}
+                  <div className={`custom-formula-tutorial ${showTutorial ? 'is-open' : ''}`} style={{ marginBottom: '2rem' }}>
+                    <button 
+                      type="button" 
+                      className="tutorial-toggle"
+                      onClick={() => setShowTutorial(!showTutorial)}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <div className="tutorial-toggle-icon"><BookOpen size={18} /></div>
+                        <div style={{ textAlign: 'left' }}>
+                          <span style={{ display: 'block', fontWeight: 700, fontSize: '0.95rem' }}>
+                            {showTutorial ? 'Ocultar guía de ayuda' : '¿Necesitas ayuda con la fórmula personalizada?'}
+                          </span>
+                          <span style={{ fontSize: '0.8rem', opacity: 0.7 }}>Aprende a configurar datos y operaciones matemáticas</span>
+                        </div>
                       </div>
+                      <ChevronDown size={20} style={{ transform: showTutorial ? 'rotate(180deg)' : 'none', transition: 'transform 0.3s' }} />
+                    </button>
+
+                    {showTutorial && (
+                      <div className="tutorial-content-wrapper">
+                        <div className="custom-formula-tutorial__grid">
+                          <div className="custom-formula-tutorial__card">
+                            <div className="custom-formula-tutorial__card-title">
+                              <Hash size={16} /> 1. Define los datos
+                            </div>
+                            <p>Crea las variables que el capturista llenará cada mes (ej: Tickets resueltos).</p>
+                          </div>
+                          <div className="custom-formula-tutorial__card">
+                            <div className="custom-formula-tutorial__card-title">
+                              <Calculator size={16} /> 2. Crea la fórmula
+                            </div>
+                            <p>Usa las claves (keys) de tus datos para armar la operación matemática.</p>
+                          </div>
+                        </div>
+
+                        <div className="custom-formula-example" style={{ marginTop: '1rem' }}>
+                          <div className="custom-formula-example__title">Ejemplo rápido</div>
+                          <div className="custom-formula-example__content">
+                            <code>(tickets_resueltos / tickets_recibidos) * 100</code>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* STEP 1: VARIABLES */}
+                  <div className="builder-step-section">
+                    <div className="builder-step-header">
+                      <div className="builder-step-badge">Paso 1</div>
                       <div>
-                        <h4>Tutorial: cómo configurar una fórmula personalizada</h4>
-                        <p>
-                          Esta opción sirve para crear un KPI que no encaja en las fórmulas predeterminadas.
-                          Tu defines qué datos se capturan cada mes y la regla con la que se convierten en porcentaje.
-                        </p>
+                        <h4>Define los datos a capturar</h4>
+                        <p>Agrega los campos que se llenarán mensualmente para este indicador.</p>
                       </div>
                     </div>
-
-                    <div className="custom-formula-tutorial__grid">
-                      <div className="custom-formula-tutorial__card">
-                        <div className="custom-formula-tutorial__card-title">
-                          <Lightbulb size={16} />
-                          1. Piensa que quieres medir
-                        </div>
-                        <p>
-                          Antes de escribir la fórmula, define el objetivo del KPI. Pregúntate:
-                          "¿Qué números necesito capturar para saber si voy bien o mal?"
-                        </p>
-                        <ul>
-                          <li>Solicitudes recibidas vs solicitudes resueltas</li>
-                          <li>Errores detectados vs errores corregidos</li>
-                          <li>Piezas revisadas vs piezas aprobadas</li>
-                        </ul>
-                      </div>
-
-                      <div className="custom-formula-tutorial__card">
-                        <div className="custom-formula-tutorial__card-title">
-                          <Hash size={16} />
-                          2. Crea los datos a capturar
-                        </div>
-                        <p>
-                          Cada "Dato" es un valor que el usuario llenará en la captura mensual. Usa nombres claros y fáciles de entender.
-                        </p>
-                        <ul>
-                          <li>Dato 1: Solicitudes resueltas</li>
-                          <li>Dato 2: Solicitudes recibidas</li>
-                          <li>Dato 3: Casos reabiertos</li>
-                        </ul>
-                      </div>
-
-                      <div className="custom-formula-tutorial__card">
-                        <div className="custom-formula-tutorial__card-title">
-                          <Calculator size={16} />
-                          3. Elige una forma de calcular
-                        </div>
-                        <p>
-                          Puedes arrancar con una plantilla. Eso cubre la mayoría de los casos y evita errores al escribir la fórmula manualmente.
-                        </p>
-                        <ul>
-                          <li>Porcentaje: (cumplidas / recibidas) x 100</li>
-                          <li>Diferencia: meta - resultado</li>
-                          <li>Promedio: (valor 1 + valor 2 + valor 3) / 3</li>
-                        </ul>
-                      </div>
-
-                      <div className="custom-formula-tutorial__card">
-                        <div className="custom-formula-tutorial__card-title">
-                          <AlertCircle size={16} />
-                          4. Revisa antes de guardar
-                        </div>
-                        <p>
-                          La fórmula solo puede usar los datos definidos arriba. Si escribes una variable que no existe o divides entre cero, el sistema lo marcará.
-                        </p>
-                        <ul>
-                          <li>Usa nombres claros en cada dato</li>
-                          <li>Confirma que la fórmula refleje el KPI real</li>
-                          <li>Verifica que el resultado esperado sea un porcentaje</li>
-                        </ul>
-                      </div>
-                    </div>
-
-                    <div className="custom-formula-example">
-                      <div className="custom-formula-example__title">Ejemplo completo</div>
-                      <div className="custom-formula-example__content">
-                        <div>
-                          <strong>KPI:</strong> Cumplimiento de atención de tickets
-                        </div>
-                        <div>
-                          <strong>Datos a capturar:</strong> Tickets resueltos, tickets recibidos
-                        </div>
-                        <div>
-                          <strong>Formula:</strong> <span>(tickets_resueltos / tickets_recibidos) * 100</span>
-                        </div>
-                        <div>
-                          <strong>Interpretación:</strong> si se resolvieron 45 de 50 tickets, el resultado del mes es 90%.
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <label className="field-label">Constructor de fórmula personalizada</label>
-                  <p className="step-description" style={{ marginBottom: '1rem' }}>
-                    Primero define los datos que el usuario va a capturar y luego elige una forma de calcular el resultado.
-                  </p>
-
-                  <div style={{ display: 'grid', gap: '0.75rem', marginBottom: '1rem' }}>
-                    <div style={{ background: '#f8fbff', border: '1px solid rgba(59, 130, 246, 0.15)', borderRadius: '14px', padding: '0.9rem 1rem' }}>
-                      <strong style={{ display: 'block', marginBottom: '0.35rem', color: 'var(--text-main)' }}>Paso 1. Define los datos a capturar</strong>
-                      <span className="field-hint">Ejemplo: solicitudes recibidas, solicitudes resueltas, inspecciones correctas.</span>
-                    </div>
-                    <div style={{ background: '#f8fbff', border: '1px solid rgba(59, 130, 246, 0.15)', borderRadius: '14px', padding: '0.9rem 1rem' }}>
-                      <strong style={{ display: 'block', marginBottom: '0.35rem', color: 'var(--text-main)' }}>Paso 2. Elige cómo se calcula</strong>
-                      <span className="field-hint">Puedes empezar con una plantilla y, si lo necesitas, cambiarla a fórmula libre.</span>
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-                    {customVariables.map((variable, index) => (
-                      <div key={variable.id} className="premium-variable-card">
-                        <div className="pvc-header">
-                          <div className="pvc-tag">DATO {index + 1}</div>
-                          <button
-                            type="button"
-                            className="pvc-delete"
-                            onClick={() => removeCustomVariable(variable.id)}
-                            disabled={customVariables.length <= 1}
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-
-                        <div className="pvc-body">
-                          <input
-                            className="pvc-input-label"
-                            type="text"
-                            placeholder={index === 0 ? 'Nombre del dato (ej. Tickets)' : 'Nombre del dato'}
-                            value={variable.label}
-                            onChange={(e) => updateCustomVariable(variable.id, 'label', e.target.value)}
-                          />
-
-                          <div className="pvc-key-row">
-                            <Hash size={12} />
-                            <span className="pvc-key">{variable.key}</span>
+                    <div className="variable-builder-grid">
+                      {customVariables.map((variable, index) => (
+                        <div key={variable.id} className="premium-variable-card">
+                          <div className="pvc-header">
+                            <div className="pvc-tag">DATO {index + 1}</div>
+                            <button
+                              type="button"
+                              className="pvc-delete"
+                              onClick={() => removeCustomVariable(variable.id)}
+                              disabled={customVariables.length <= 1}
+                            >
+                              <Trash2 size={14} />
+                            </button>
                           </div>
 
-                          <input
-                            className="pvc-input-hint"
-                            type="text"
-                            placeholder="Instrucciones para el usuario..."
-                            value={variable.helpText || ''}
-                            onChange={(e) => updateCustomVariable(variable.id, 'helpText', e.target.value)}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                          <div className="pvc-body">
+                            <input
+                              className={`pvc-input-label ${!variable.label.trim() ? 'pvc-input-error' : ''}`}
+                              type="text"
+                              placeholder={index === 0 ? 'Nombre del dato (ej. Tickets)' : 'Nombre del dato'}
+                              value={variable.label}
+                              onChange={(e) => updateCustomVariable(variable.id, 'label', e.target.value)}
+                            />
+                            {!variable.label.trim() && (
+                              <span style={{ fontSize: '0.65rem', color: '#ef4444', fontWeight: 600, display: 'block', marginBottom: '0.5rem' }}>
+                                * Requerido
+                              </span>
+                            )}
 
-                  <style>{`
-                    .premium-variable-card {
-                      background: white;
-                      border: 2px solid #f1f5f9;
-                      border-radius: 16px;
-                      padding: 1.25rem;
-                      transition: all 0.2s;
-                    }
-                    .premium-variable-card:hover {
-                      border-color: var(--accent-color);
-                      box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.1);
-                    }
-                    .pvc-header {
-                      display: flex;
-                      justify-content: space-between;
-                      align-items: center;
-                      margin-bottom: 1rem;
-                    }
-                    .pvc-tag {
-                      font-size: 0.65rem;
-                      font-weight: 800;
-                      color: var(--accent-color);
-                      background: rgba(59, 130, 246, 0.1);
-                      padding: 2px 8px;
-                      border-radius: 6px;
-                      letter-spacing: 0.05em;
-                    }
-                    .pvc-delete {
-                      background: none;
-                      border: none;
-                      color: #94a3b8;
-                      cursor: pointer;
-                      padding: 4px;
-                      border-radius: 50%;
-                      transition: all 0.2s;
-                    }
-                    .pvc-delete:hover { background: #fef2f2; color: #ef4444; }
-                    .pvc-input-label {
-                      width: 100%;
-                      border: none;
-                      background: none;
-                      font-weight: 700;
-                      font-size: 1rem;
-                      color: #1e293b;
-                      margin-bottom: 0.5rem;
-                      outline: none;
-                      font-family: inherit;
-                    }
-                    .pvc-key-row {
-                      display: flex;
-                      align-items: center;
-                      gap: 4px;
-                      color: #64748b;
-                      margin-bottom: 0.75rem;
-                      font-family: monospace;
-                      font-size: 0.8rem;
-                    }
-                    .pvc-input-hint {
-                      width: 100%;
-                      border: 1px solid #f1f5f9;
-                      background: #f8fafc;
-                      border-radius: 8px;
-                      padding: 0.4rem 0.6rem;
-                      font-size: 0.8rem;
-                      color: #64748b;
-                      outline: none;
-                    }
-                    .pvc-input-hint:focus { border-color: #cbd5e1; background: white; }
-                  `}</style>
+                            <div className="pvc-key-row" title="Usa esta clave en tu fórmula">
+                              <Hash size={12} />
+                              <span className="pvc-key">{variable.key}</span>
+                              <span style={{ fontSize: '0.65rem', opacity: 0.6, marginLeft: 'auto' }}>Clave para fórmula</span>
+                            </div>
 
-                  <button type="button" className="btn-secondary" onClick={addCustomVariable} style={{ marginBottom: '1rem' }}>
-                    <Plus size={16} /> Agregar variable
-                  </button>
-
-                  <label className="field-label">Plantilla de cálculo</label>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.75rem', marginBottom: '1rem' }}>
-                    {CUSTOM_TEMPLATE_OPTIONS.map((option) => (
-                      <button
-                        key={option.value}
-                        type="button"
-                        className={`formula-option-card ${customTemplate === option.value ? 'selected' : ''}`}
-                        onClick={() => {
-                          setCustomTemplate(option.value);
-                          syncCustomExpression(option.value, customVariables, formulaTipo);
-                        }}
-                        style={{ textAlign: 'left', padding: '0.75rem' }}
-                      >
-                        <div className="foc-body">
-                          <div className="foc-label" style={{ fontSize: '0.85rem' }}>{option.label}</div>
-                          <div className="foc-example" style={{ fontSize: '0.7rem' }}>{option.description}</div>
-                        </div>
-                        {customTemplate === option.value && (
-                          <div className="foc-check"><Check size={14} /></div>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-
-                  <label className="field-label" style={{ marginTop: '2rem' }}>Expresión matemática</label>
-                  <div style={{ background: '#ffffff', border: '1px solid rgba(59, 130, 246, 0.12)', borderRadius: '12px', padding: '0.9rem 1rem', marginBottom: '1rem' }}>
-                    <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Vista previa del cálculo</div>
-                    <div style={{ fontFamily: 'monospace', fontSize: '1.1rem', color: 'var(--accent-color)', fontWeight: 700 }}>
-                      {customExpression || <span style={{ opacity: 0.3 }}>Define una fórmula para continuar...</span>}
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
-                    {customVariables.map((variable) => (
-                      <button
-                        key={variable.id}
-                        type="button"
-                        className="btn-token-var"
-                        onClick={() => appendExpressionToken(variable.key)}
-                      >
-                        {variable.key}
-                      </button>
-                    ))}
-                    {['+', '-', '*', '/', '(', ')', '100'].map((token) => (
-                      <button
-                        key={token}
-                        type="button"
-                        className="btn-token-op"
-                        onClick={() => appendExpressionToken(token)}
-                      >
-                        {token}
-                      </button>
-                    ))}
-                  </div>
-
-                  <textarea
-                    className="field-input field-textarea"
-                    rows={3}
-                    placeholder="Ej: (tickets_resueltos / tickets_recibidos) * 100"
-                    value={customExpression}
-                    onChange={(e) => {
-                      if (customTemplate !== 'manual') {
-                        setCustomTemplate('manual');
-                      }
-                      setCustomExpression(e.target.value);
-                    }}
-                    style={{ fontFamily: 'monospace', fontSize: '1rem', border: '2px solid #e2e8f0', borderRadius: '14px' }}
-                  />
-
-                  <div className="field-hint" style={{ marginTop: '0.5rem', marginBottom: '2rem' }}>
-                    Usa las plantillas o escribe libremente. Operaciones: +, -, *, /, ( ).
-                  </div>
-
-                  {!customFormulaValidation.valid && (
-                    <div className="semaforo-warning" style={{ margin: '1rem 0' }}>
-                      <AlertCircle size={16} /> {customFormulaValidation.error}
-                    </div>
-                  )}
-
-                  <style>{`
-                    .btn-token-var {
-                      background: #eff6ff;
-                      border: 1px solid #bfdbfe;
-                      color: #2563eb;
-                      padding: 0.4rem 0.8rem;
-                      border-radius: 8px;
-                      font-family: monospace;
-                      font-weight: 700;
-                      cursor: pointer;
-                      transition: all 0.2s;
-                    }
-                    .btn-token-var:hover { background: #dbeafe; transform: translateY(-1px); }
-                    
-                    .btn-token-op {
-                      background: #f8fafc;
-                      border: 1px solid #e2e8f0;
-                      color: #64748b;
-                      padding: 0.4rem 0.8rem;
-                      border-radius: 8px;
-                      font-family: monospace;
-                      font-weight: 700;
-                      cursor: pointer;
-                      transition: all 0.2s;
-                    }
-                    .btn-token-op:hover { background: #f1f5f9; color: #1e293b; }
-                  `}</style>
-
-                  <label className="field-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '2rem' }}>
-                    <Calculator size={18} /> Probador de fórmula (Simulación)
-                  </label>
-                  <div className="simulation-box">
-                    <div className="simulation-grid">
-                      <div className="simulation-inputs">
-                        {customVariables.map((v, i) => (
-                          <div key={v.id} className="simulation-field">
-                            <label>{v.label || `Dato ${i + 1}`}</label>
-                            <input 
-                              type="number" 
-                              placeholder="0"
-                              value={simulationValues[v.id] || ''}
-                              onChange={(e) => setSimulationValues(prev => ({ ...prev, [v.id]: e.target.value }))}
+                            <input
+                              className="pvc-input-hint"
+                              type="text"
+                              placeholder="Instrucciones para el usuario..."
+                              value={variable.helpText || ''}
+                              onChange={(e) => updateCustomVariable(variable.id, 'helpText', e.target.value)}
                             />
                           </div>
-                        ))}
+                        </div>
+                      ))}
+                    </div>
+
+                    <button type="button" className="btn-add-variable" onClick={addCustomVariable}>
+                      <PlusCircle size={18} /> Agregar otro dato a capturar
+                    </button>
+                  </div>
+
+                  {/* STEP 2: FORMULA */}
+                  <div className="builder-step-section">
+                    <div className="builder-step-header">
+                      <div className="builder-step-badge">Paso 2</div>
+                      <div>
+                        <h4>Construye la fórmula de cálculo</h4>
+                        <p>Elige una plantilla o escribe tu expresión matemática personalizada.</p>
                       </div>
-                      <div className="simulation-display">
-                        <div className="simulation-label">Resultado simulado</div>
-                        <div className={`simulation-value ${simulationError ? 'error' : ''}`}>
-                          {simulationError ? '---' : (simulationResult !== null ? simulationResult.toLocaleString() : '0')}
+                    </div>
+
+                    <div className="template-selector-grid">
+                      {CUSTOM_TEMPLATE_OPTIONS.map((option) => (
+                        <button
+                          key={option.value}
+                          type="button"
+                          className={`template-card ${customTemplate === option.value ? 'is-selected' : ''}`}
+                          onClick={() => {
+                            setCustomTemplate(option.value);
+                            syncCustomExpression(option.value, customVariables, formulaTipo);
+                          }}
+                        >
+                          <div className="template-card-label">{option.label}</div>
+                          <div className="template-card-desc">{option.description}</div>
+                          {customTemplate === option.value && <div className="template-card-check"><Check size={14} /></div>}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="formula-composer-box">
+                      <div className="formula-preview-header">
+                        <Calculator size={14} /> Vista previa de la operación
+                      </div>
+                      <div className="formula-preview-display">
+                        {customExpression || <span className="placeholder">Define una expresión...</span>}
+                      </div>
+
+                      <div className="token-bank">
+                        <div className="token-group">
+                          <span className="token-group-label">Tus Datos:</span>
+                          {customVariables.map((v) => (
+                            <button key={v.id} type="button" className="token-pill var" onClick={() => appendExpressionToken(v.key)}>
+                              {v.key}
+                            </button>
+                          ))}
                         </div>
-                        <div className="simulation-hint">
-                          {simulationError || 'Cambia los valores de arriba para validar tu fórmula en tiempo real.'}
+                        <div className="token-group">
+                          <span className="token-group-label">Operadores:</span>
+                          {['+', '-', '*', '/', '(', ')', '100'].map((op) => (
+                            <button key={op} type="button" className="token-pill op" onClick={() => appendExpressionToken(op)}>
+                              {op}
+                            </button>
+                          ))}
                         </div>
+                      </div>
+
+                      <textarea
+                        className="formula-textarea"
+                        rows={3}
+                        placeholder="Escribe aquí tu fórmula..."
+                        value={customExpression}
+                        onChange={(e) => {
+                          if (customTemplate !== 'manual') setCustomTemplate('manual');
+                          setCustomExpression(e.target.value);
+                        }}
+                      />
+                      
+                      {!customFormulaValidation.valid && (
+                        <div className="formula-error-msg">
+                          <AlertCircle size={16} /> {customFormulaValidation.error}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* STEP 3: SIMULATION */}
+                  <div className="builder-step-section">
+                    <div className="builder-step-header">
+                      <div className="builder-step-badge">Paso 3</div>
+                      <div>
+                        <h4>Prueba tu fórmula</h4>
+                        <p>Simula valores reales para confirmar que el cálculo es correcto.</p>
+                      </div>
+                    </div>
+
+                  <div className="premium-simulation-card">
+                    <div className="sim-inputs-grid">
+                      {customVariables.map((v, i) => (
+                        <div key={v.id} className="sim-field">
+                          <label>{v.label || `Dato ${i + 1}`}</label>
+                          <input 
+                            type="number" 
+                            placeholder="0"
+                            value={simulationValues[v.id] || ''}
+                            onChange={(e) => setSimulationValues(prev => ({ ...prev, [v.id]: e.target.value }))}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                    
+                    <div className="sim-result-panel">
+                      <div className="sim-result-main">
+                        <div className="sim-result-label">Resultado</div>
+                        <div className={`sim-result-value ${simulationError ? 'has-error' : ''}`}>
+                          {simulationError ? 'ERROR' : (simulationResult !== null ? `${simulationResult.toLocaleString()}%` : '0%')}
+                        </div>
+                      </div>
+                      <div className="sim-result-status">
+                        {simulationError ? (
+                          <span className="status-err"><AlertCircle size={14} /> {simulationError}</span>
+                        ) : (
+                          <span className="status-ok"><Check size={14} /> Fórmula lista para usar</span>
+                        )}
                       </div>
                     </div>
                   </div>
 
                   <style>{`
-                    .simulation-box {
-                      background: #0f172a;
+                    .builder-step-section {
+                      background: white;
+                      border-radius: 24px;
+                      padding: 2rem;
+                      margin-bottom: 2rem;
+                      border: 1px solid #f1f5f9;
+                      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+                    }
+                    .builder-step-header {
+                      display: flex;
+                      gap: 1.25rem;
+                      align-items: flex-start;
+                      margin-bottom: 2rem;
+                    }
+                    .builder-step-badge {
+                      background: #1e293b;
                       color: white;
-                      border-radius: 20px;
-                      padding: 1.5rem;
-                      margin-top: 1rem;
-                      box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.2);
-                    }
-                    .simulation-grid {
-                      display: grid;
-                      grid-template-columns: 1fr 200px;
-                      gap: 2rem;
-                    }
-                    .simulation-inputs {
-                      display: grid;
-                      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-                      gap: 1rem;
-                    }
-                    .simulation-field label {
-                      display: block;
-                      font-size: 0.7rem;
+                      padding: 4px 12px;
+                      border-radius: 8px;
+                      font-size: 0.75rem;
+                      font-weight: 800;
                       text-transform: uppercase;
                       letter-spacing: 0.05em;
-                      color: #94a3b8;
-                      margin-bottom: 0.5rem;
-                      font-weight: 700;
                     }
-                    .simulation-field input {
+                    .builder-step-header h4 { margin: 0 0 0.25rem; font-size: 1.1rem; color: #0f172a; }
+                    .builder-step-header p { margin: 0; font-size: 0.9rem; color: #64748b; }
+
+                    .btn-add-variable {
                       width: 100%;
-                      background: rgba(255, 255, 255, 0.05);
-                      border: 1px solid rgba(255, 255, 255, 0.1);
-                      border-radius: 10px;
-                      padding: 0.6rem 0.8rem;
-                      color: white;
-                      font-family: 'Outfit', sans-serif;
+                      padding: 1.25rem;
+                      background: #f8fafc;
+                      border: 2px dashed #cbd5e1;
+                      border-radius: 16px;
+                      color: #475569;
                       font-weight: 600;
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                      gap: 0.75rem;
+                      cursor: pointer;
                       transition: all 0.2s;
                     }
-                    .simulation-field input:focus {
-                      outline: none;
-                      background: rgba(255, 255, 255, 0.1);
+                    .btn-add-variable:hover {
+                      background: #eff6ff;
                       border-color: #3b82f6;
-                    }
-                    .simulation-display {
-                      border-left: 1px solid rgba(255, 255, 255, 0.1);
-                      padding-left: 1.5rem;
-                      display: flex;
-                      flex-direction: column;
-                      justify-content: center;
-                    }
-                    .simulation-label {
-                      font-size: 0.75rem;
-                      color: #94a3b8;
-                      font-weight: 700;
-                      text-transform: uppercase;
-                      margin-bottom: 0.5rem;
-                    }
-                    .simulation-value {
-                      font-size: 2.5rem;
-                      font-weight: 800;
                       color: #3b82f6;
-                      line-height: 1;
-                      margin-bottom: 0.5rem;
                     }
-                    .simulation-value.error {
-                      color: #ef4444;
+
+                    .template-selector-grid {
+                      display: grid;
+                      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+                      gap: 0.75rem;
+                      margin-bottom: 1.5rem;
                     }
-                    .simulation-hint {
+                    .template-card {
+                      background: white;
+                      border: 2px solid #f1f5f9;
+                      border-radius: 14px;
+                      padding: 1rem;
+                      text-align: left;
+                      cursor: pointer;
+                      position: relative;
+                      transition: all 0.2s;
+                    }
+                    .template-card.is-selected {
+                      border-color: #3b82f6;
+                      background: #f0f7ff;
+                    }
+                    .template-card-label { font-weight: 700; font-size: 0.85rem; color: #1e293b; margin-bottom: 0.25rem; }
+                    .template-card-desc { font-size: 0.75rem; color: #64748b; line-height: 1.3; }
+                    .template-card-check { position: absolute; top: 0.75rem; right: 0.75rem; color: #3b82f6; }
+
+                    .formula-composer-box {
+                      background: #f8fafc;
+                      border: 1px solid #e2e8f0;
+                      border-radius: 20px;
+                      padding: 1.5rem;
+                    }
+                    .formula-preview-header { font-size: 0.7rem; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem; }
+                    .formula-preview-display {
+                      font-family: monospace;
+                      font-size: 1.25rem;
+                      font-weight: 700;
+                      color: #3b82f6;
+                      margin-bottom: 1.5rem;
+                      word-break: break-all;
+                    }
+                    .token-bank { display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1.5rem; }
+                    .token-group { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+                    .token-group-label { font-size: 0.75rem; font-weight: 700; color: #64748b; min-width: 80px; }
+                    .token-pill {
+                      border: 1px solid #e2e8f0;
+                      padding: 0.4rem 0.75rem;
+                      border-radius: 8px;
                       font-size: 0.8rem;
-                      color: #64748b;
-                      line-height: 1.4;
+                      font-weight: 700;
+                      font-family: monospace;
+                      cursor: pointer;
+                      transition: all 0.2s;
                     }
-                    @media (max-width: 640px) {
-                      .simulation-grid { grid-template-columns: 1fr; }
-                      .simulation-display { border-left: none; padding-left: 0; padding-top: 1rem; border-top: 1px solid rgba(255, 255, 255, 0.1); }
+                    .token-pill.var { background: #eff6ff; color: #2563eb; border-color: #bfdbfe; }
+                    .token-pill.op { background: white; color: #475569; }
+                    .token-pill:hover { transform: translateY(-1px); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+
+                    .formula-textarea {
+                      width: 100%;
+                      background: white;
+                      border: 2px solid #e2e8f0;
+                      border-radius: 14px;
+                      padding: 1rem;
+                      font-family: monospace;
+                      font-size: 1rem;
+                      outline: none;
+                      transition: all 0.2s;
+                    }
+                    .formula-textarea:focus { border-color: #3b82f6; }
+                    .formula-error-msg { margin-top: 1rem; color: #ef4444; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem; }
+
+                    .premium-simulation-card {
+                      background: #0f172a;
+                      border-radius: 24px;
+                      overflow: hidden;
+                      display: grid;
+                      grid-template-columns: 1fr 240px;
+                    }
+                    .sim-inputs-grid { padding: 2rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 1rem; }
+                    .sim-field label { display: block; font-size: 0.65rem; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin-bottom: 0.5rem; }
+                    .sim-field input { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 0.75rem 1rem; color: white; font-weight: 600; transition: all 0.2s; }
+                    .sim-field input:focus { border-color: #3b82f6; background: rgba(255,255,255,0.1); }
+                    
+                    .sim-result-panel { background: rgba(255,255,255,0.03); border-left: 1px solid rgba(255,255,255,0.08); padding: 2rem; display: flex; flex-direction: column; justify-content: center; }
+                    .sim-result-label { font-size: 0.75rem; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin-bottom: 0.5rem; }
+                    .sim-result-value { font-size: 2.5rem; font-weight: 800; color: #3b82f6; margin-bottom: 0.5rem; }
+                    .sim-result-value.has-error { color: #ef4444; font-size: 1.5rem; }
+                    .status-ok { color: #10b981; font-size: 0.75rem; font-weight: 700; display: flex; align-items: center; gap: 0.5rem; }
+                    .status-err { color: #ef4444; font-size: 0.75rem; font-weight: 700; display: flex; align-items: center; gap: 0.5rem; }
+                    
+                    .tutorial-toggle {
+                      width: 100%;
+                      padding: 1rem 1.5rem;
+                      background: white;
+                      border: 1px solid #e2e8f0;
+                      border-radius: 16px;
+                      display: flex;
+                      align-items: center;
+                      justify-content: space-between;
+                      cursor: pointer;
+                      transition: all 0.2s;
+                    }
+                    .tutorial-toggle:hover { background: #f8fafc; border-color: #3b82f6; }
+                    .tutorial-toggle-icon { background: #eff6ff; color: #3b82f6; padding: 8px; border-radius: 10px; }
+                    .tutorial-content-wrapper { padding: 1.5rem; background: #f8fafc; border: 1px solid #e2e8f0; border-top: none; border-bottom-left-radius: 16px; border-bottom-right-radius: 16px; }
+                    
+                    @media (max-width: 768px) {
+                      .premium-simulation-card { grid-template-columns: 1fr; }
+                      .sim-result-panel { border-left: none; border-top: 1px solid rgba(255,255,255,0.08); }
                     }
                   `}</style>
                 </div>
