@@ -2,7 +2,7 @@ import assert from 'assert';
 
 const HOST = 'http://localhost:3000';
 
-async function delay(ms) {
+async function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
@@ -16,14 +16,14 @@ async function runTests() {
     const kpis = dataKpis.data;
     
     // Identificar IDs por formula_tipo
-    const kpiSiNo = kpis.find(k => k.formula_tipo === 'si_no');
-    const kpiDoble = kpis.find(k => k.formula_tipo === 'documental_doble');
-    const kpiConteo = kpis.find(k => k.formula_tipo === 'cumplidos_programados');
-    const kpiOp = kpis.find(k => k.formula_tipo === 'correctos_total');
-    const kpiEntrega = kpis.find(k => k.formula_tipo === 'entregas_a_tiempo');
+    const kpiSiNo = kpis.find((k: any) => k.formula_tipo === 'si_no');
+    const kpiDoble = kpis.find((k: any) => k.formula_tipo === 'documental_doble');
+    const kpiConteo = kpis.find((k: any) => k.formula_tipo === 'cumplidos_programados');
+    const kpiOp = kpis.find((k: any) => k.formula_tipo === 'correctos_total');
+    const kpiEntrega = kpis.find((k: any) => k.formula_tipo === 'entregas_a_tiempo');
     
     // Función auxiliar para postear
-    const capturar = async (kpi_id, tipo_captura, detalles) => {
+    const capturar = async (kpi_id: string, tipo_captura: string, detalles: any) => {
       const payload = { kpi_id, anio: 2026, mes: 2, tipo_captura, comentario: 'Test auto', detalles };
       const postRes = await fetch(`${HOST}/api/capturas`, {
           method: 'POST',
@@ -36,7 +36,7 @@ async function runTests() {
       await delay(200); // Pequeña pausa para asegurar bd
       const res = await fetch(`${HOST}/api/kpis?anio=2026&mes=2`);
       const body = await res.json();
-      return body.data.find(k => k.kpi_id === kpi_id);
+      return body.data.find((k: any) => k.kpi_id === kpi_id);
     };
 
     let result;
@@ -112,7 +112,7 @@ async function runTests() {
 
     console.log("\n🚀 TODAS LAS PRUEBAS RESULTARON EXITOSAS.");
 
-  } catch (err) {
+  } catch (err: any) {
     console.error("\n❌ ERROR DURANTE LOS TESTS:");
     if (err.name === 'AssertionError') {
       console.error(err.message);
