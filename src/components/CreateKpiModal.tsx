@@ -744,34 +744,35 @@ export default function CreateKpiModal({ empresaId, onClose, onSuccess }: Create
                       </div>
                     </div>
 
-                  <div className="premium-simulation-card">
-                    <div className="sim-inputs-grid">
-                      {customVariables.map((v, i) => (
-                        <div key={v.id} className="sim-field">
-                          <label>{v.label || `Dato ${i + 1}`}</label>
-                          <input 
-                            type="number" 
-                            placeholder="0"
-                            value={simulationValues[v.id] || ''}
-                            onChange={(e) => setSimulationValues(prev => ({ ...prev, [v.id]: e.target.value }))}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                    
-                    <div className="sim-result-panel">
-                      <div className="sim-result-main">
-                        <div className="sim-result-label">Resultado</div>
-                        <div className={`sim-result-value ${simulationError ? 'has-error' : ''}`}>
-                          {simulationError ? 'ERROR' : (simulationResult !== null ? `${simulationResult.toLocaleString()}%` : '0%')}
-                        </div>
+                    <div className="premium-simulation-card">
+                      <div className="sim-inputs-grid">
+                        {customVariables.map((v, i) => (
+                          <div key={v.id} className="sim-field">
+                            <label>{v.label || `Dato ${i + 1}`}</label>
+                            <input 
+                              type="number" 
+                              placeholder="0"
+                              value={simulationValues[v.id] || ''}
+                              onChange={(e) => setSimulationValues(prev => ({ ...prev, [v.id]: e.target.value }))}
+                            />
+                          </div>
+                        ))}
                       </div>
-                      <div className="sim-result-status">
-                        {simulationError ? (
-                          <span className="status-err"><AlertCircle size={14} /> {simulationError}</span>
-                        ) : (
-                          <span className="status-ok"><Check size={14} /> Fórmula lista para usar</span>
-                        )}
+                      
+                      <div className="sim-result-panel">
+                        <div className="sim-result-main">
+                          <div className="sim-result-label">Resultado</div>
+                          <div className={`sim-result-value ${simulationError ? 'has-error' : ''}`}>
+                            {simulationError ? 'ERROR' : (simulationResult !== null ? `${simulationResult.toLocaleString()}%` : '0%')}
+                          </div>
+                        </div>
+                        <div className="sim-result-status">
+                          {simulationError ? (
+                            <span className="status-err"><AlertCircle size={14} /> {simulationError}</span>
+                          ) : (
+                            <span className="status-ok"><Check size={14} /> Fórmula lista para usar</span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -803,6 +804,39 @@ export default function CreateKpiModal({ empresaId, onClose, onSuccess }: Create
                     }
                     .builder-step-header h4 { margin: 0 0 0.25rem; font-size: 1.1rem; color: #0f172a; }
                     .builder-step-header p { margin: 0; font-size: 0.9rem; color: #64748b; }
+
+                    .variable-builder-grid {
+                      display: grid;
+                      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+                      gap: 1rem;
+                      margin-bottom: 1.5rem;
+                    }
+                    
+                    .premium-variable-card {
+                      background: #f8fafc;
+                      border: 2px solid #e2e8f0;
+                      border-radius: 20px;
+                      padding: 1.25rem;
+                      transition: all 0.2s;
+                    }
+                    .premium-variable-card:hover {
+                      border-color: #3b82f6;
+                      background: white;
+                      box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.1);
+                    }
+                    .pvc-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+                    .pvc-tag { font-size: 0.65rem; font-weight: 800; color: #3b82f6; background: #eff6ff; padding: 2px 8px; border-radius: 6px; }
+                    .pvc-delete { background: none; border: none; color: #94a3b8; cursor: pointer; padding: 4px; border-radius: 50%; transition: all 0.2s; }
+                    .pvc-delete:hover { background: #fef2f2; color: #ef4444; }
+                    
+                    .pvc-input-label { width: 100%; border: none; background: transparent; font-weight: 700; font-size: 1rem; color: #1e293b; margin-bottom: 0.25rem; outline: none; border-bottom: 2px solid transparent; }
+                    .pvc-input-label:focus { border-bottom-color: #3b82f6; }
+                    .pvc-input-error { border-bottom-color: #ef4444 !important; }
+                    
+                    .pvc-key-row { display: flex; align-items: center; gap: 4px; color: #64748b; margin-bottom: 0.75rem; font-family: monospace; font-size: 0.8rem; }
+                    .pvc-key { font-weight: 600; color: #334155; }
+                    
+                    .pvc-input-hint { width: 100%; border: 1px solid #e2e8f0; background: white; border-radius: 8px; padding: 0.5rem; font-size: 0.8rem; outline: none; }
 
                     .btn-add-variable {
                       width: 100%;
@@ -863,7 +897,10 @@ export default function CreateKpiModal({ empresaId, onClose, onSuccess }: Create
                       color: #3b82f6;
                       margin-bottom: 1.5rem;
                       word-break: break-all;
+                      min-height: 1.5em;
                     }
+                    .formula-preview-display .placeholder { opacity: 0.3; }
+                    
                     .token-bank { display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1.5rem; }
                     .token-group { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
                     .token-group-label { font-size: 0.75rem; font-weight: 700; color: #64748b; min-width: 80px; }
